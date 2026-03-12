@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+const isDev = process.env.NODE_ENV === "development"
+
 function SignInForm() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/"
@@ -20,10 +22,13 @@ function SignInForm() {
     setError(null)
 
     try {
-      await signIn("nodemailer", {
-        email,
-        callbackUrl,
-      })
+      if (isDev) {
+        // Dev: Credentials provider — signs in immediately, no email sent
+        await signIn("credentials", { email, callbackUrl })
+      } else {
+        // Prod: Nodemailer — sends a magic link email
+        await signIn("nodemailer", { email, callbackUrl })
+      }
     } catch {
       setError("Something went wrong. Please try again.")
       setLoading(false)
@@ -37,7 +42,9 @@ function SignInForm() {
           Sign in to Frontier Atlas
         </h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Enter your email and we'll send you a magic link.
+          {isDev
+            ? "Dev mode — enter any email to sign in instantly."
+            : "Enter your email and we'll send you a magic link."}
         </p>
       </div>
 
@@ -47,7 +54,7 @@ function SignInForm() {
           <Input
             id="email"
             type="email"
-            placeholder="you@example.com"
+            placeholder={isDev ? "maya@example.com" : "you@example.com"}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -60,13 +67,15 @@ function SignInForm() {
         )}
 
         <Button type="submit" className="w-full" disabled={loading || !email}>
-          {loading ? "Sending link..." : "Send magic link"}
+          {loading ? "Signing in..." : isDev ? "Sign in (dev)" : "Send magic link"}
         </Button>
       </form>
 
-      <p className="text-xs text-center text-muted-foreground">
-        You'll receive an email with a link to sign in. No password needed.
-      </p>
+      {!isDev && (
+        <p className="text-xs text-center text-muted-foreground">
+          You'll receive an email with a link to sign in. No password needed.
+        </p>
+      )}
     </div>
   )
 }

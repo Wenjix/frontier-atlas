@@ -91,6 +91,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
   // Live data from API
   const [liveEvents, setLiveEvents] = useState<FloorEvent[] | null>(null)
   const [livePeople, setLivePeople] = useState<PersonToKnow[] | null>(null)
+  const [livePulse, setLivePulse] = useState<{ signals: string[]; summary: string } | null>(null)
 
   useEffect(() => {
     // Fetch upcoming events
@@ -104,6 +105,15 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         host: e.hostName,
         recurring: e.isRecurring,
       })))
+    }).catch(() => {
+      // Fall back to static data on error
+    })
+
+    // Fetch living floor pulse
+    api.get<{ signals: string[]; summary: string }>(
+      `/api/floors/${floor.id}/pulse`
+    ).then(res => {
+      setLivePulse({ signals: res.signals, summary: res.summary })
     }).catch(() => {
       // Fall back to static data on error
     })
@@ -128,6 +138,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
 
   const displayEvents = liveEvents ?? floor.events
   const displayPeople = livePeople ?? floor.peopleToKnow
+  const displayPulse = livePulse ?? floor.happeningNow
 
   const handleRequestIntro = (person: typeof selectedPerson) => {
     setSelectedPerson(person)
@@ -204,18 +215,18 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
           <CardContent className="p-0">
             {/* Live signals - tight list */}
             <ul className="space-y-1.5 mb-4">
-              {floor.happeningNow.signals.slice(0, 3).map((signal, i) => (
+              {displayPulse.signals.slice(0, 3).map((signal, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm">
                   <span className="text-muted-foreground/50 mt-0.5">·</span>
                   <span className="text-foreground">{signal}</span>
                 </li>
               ))}
             </ul>
-            
+
             {/* Summary with subtle divider */}
             <div className="pt-3 border-t border-border/40">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {floor.happeningNow.summary}
+                {displayPulse.summary}
               </p>
             </div>
           </CardContent>

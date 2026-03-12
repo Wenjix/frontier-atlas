@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession, signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { TowerSpine } from "@/components/tower-spine"
@@ -8,6 +8,7 @@ import { FloorBento } from "@/components/floor-bento"
 import { LobbyView } from "@/components/lobby-view"
 import { MobileNav } from "@/components/mobile-nav"
 import { getFloorById, type FloorType } from "@/lib/floor-data"
+import { api } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { Search, Inbox } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -23,6 +24,19 @@ export default function TowerAtlasPage() {
 
   const isAuthenticated = status === "authenticated"
   const hasMember = !!session?.user?.memberId
+  const [floorMemberCounts, setFloorMemberCounts] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    api.get<{ totalActiveMembers: number; recentlyActiveCount: number; activeFloorCount: number; upcomingEventCount: number; floorMemberCounts: Record<string, number> }>(
+      "/api/tower/activity-summary"
+    ).then(res => {
+      setFloorMemberCounts(res.floorMemberCounts)
+    }).catch(() => {
+      // Silently fall back to no counts
+    })
+  }, [isAuthenticated])
 
   const selectedFloor = selectedFloorId ? getFloorById(selectedFloorId) : null
 
@@ -51,6 +65,7 @@ export default function TowerAtlasPage() {
             onSelectFloor={handleSelectFloor}
             filter={filter}
             onFilterChange={setFilter}
+            floorMemberCounts={floorMemberCounts}
           />
         </div>
 
@@ -118,7 +133,7 @@ export default function TowerAtlasPage() {
               onBack={() => setSelectedFloorId(null)}
             />
             ) : (
-              <LobbyView onSelectFloor={handleSelectFloor} />
+              <LobbyView onSelectFloor={handleSelectFloor} onStartProfile={() => setOnboardingOpen(true)} isAuthenticated={isAuthenticated} />
             )}
           </main>
         </div>
@@ -135,7 +150,7 @@ export default function TowerAtlasPage() {
             onBack={() => setSelectedFloorId(null)}
           />
         ) : (
-          <LobbyView onSelectFloor={handleSelectFloor} onStartProfile={() => setOnboardingOpen(true)} />
+          <LobbyView onSelectFloor={handleSelectFloor} onStartProfile={() => setOnboardingOpen(true)} isAuthenticated={isAuthenticated} />
         )}
       </div>
 

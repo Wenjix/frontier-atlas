@@ -1,14 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetDescription 
+import { api } from "@/lib/api-client"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -17,20 +18,24 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { 
-  ArrowLeft, 
-  X, 
-  MessageCircle, 
-  Users, 
-  BookOpen, 
-  Sparkles, 
-  Calendar, 
+import {
+  ArrowLeft,
+  X,
+  MessageCircle,
+  Users,
+  BookOpen,
+  Sparkles,
+  Calendar,
   MoreHorizontal,
   Check,
   Clock,
   Mail,
   Video,
-  ExternalLink
+  ExternalLink,
+  Heart,
+  Handshake,
+  ArrowRight,
+  RefreshCw
 } from "lucide-react"
 
 // Types
@@ -64,6 +69,38 @@ interface IntroRequest {
     alternatePath?: string
     alternateNote?: string
   }
+}
+
+// Shared context from API
+interface SharedContext {
+  sharedTopics: string[]
+  complementaryNeeds: { type: "you_can_help" | "they_can_help"; excerpt: string }[]
+  sharedFloors: { id: string; number: string; name: string }[]
+  suggestedReason: string | null
+  sentenceStarter: string | null
+}
+
+// Suggested people for rejection recovery
+interface SuggestedPerson {
+  id: string
+  fullName: string
+  avatarUrl: string | null
+  oneLineIntro: string
+  workingOn: string | null
+  sharedTopicCount: number
+}
+
+interface SuggestedEvent {
+  id: string
+  title: string
+  startsAt: string
+  floorNumber: string
+  floorName: string
+}
+
+interface SuggestionData {
+  people: SuggestedPerson[]
+  events: SuggestedEvent[]
 }
 
 // Reason options
@@ -109,6 +146,100 @@ const ALTERNATE_PATHS = [
 ]
 
 // ============================================
+// SHARED GROUND CARD (Opportunity 1)
+// ============================================
+
+function SharedGroundCard({
+  context,
+  onUseSentenceStarter,
+  onSuggestReason,
+}: {
+  context: SharedContext
+  onUseSentenceStarter: (starter: string) => void
+  onSuggestReason: (reason: ReasonType) => void
+}) {
+  const hasContent =
+    context.sharedTopics.length > 0 ||
+    context.complementaryNeeds.length > 0 ||
+    context.sharedFloors.length > 0
+
+  if (!hasContent) return null
+
+  return (
+    <div className="bg-accent/[0.06] border border-accent/20 rounded-2xl p-4 space-y-3 animate-fade-slide-in">
+      <div className="flex items-center gap-2">
+        <Handshake className="size-4 text-accent" />
+        <p className="text-sm font-medium text-foreground">Shared ground</p>
+      </div>
+
+      <div className="space-y-2">
+        {/* Shared floors */}
+        {context.sharedFloors.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground">Same floors:</span>
+            {context.sharedFloors.map((f) => (
+              <Badge key={f.id} variant="secondary" className="text-xs bg-accent/10 text-accent border-0">
+                Floor {f.number}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Shared topics */}
+        {context.sharedTopics.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground">Shared interests:</span>
+            {context.sharedTopics.slice(0, 4).map((topic) => (
+              <Badge key={topic} variant="outline" className="text-xs">
+                {topic}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Complementary needs */}
+        {context.complementaryNeeds.map((need, i) => (
+          <div key={i} className="text-xs text-muted-foreground">
+            {need.type === "you_can_help" ? (
+              <p>
+                <span className="text-foreground font-medium">You might help with: </span>
+                {need.excerpt}
+              </p>
+            ) : (
+              <p>
+                <span className="text-foreground font-medium">They can help with: </span>
+                {need.excerpt}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Sentence starter */}
+      {context.sentenceStarter && (
+        <button
+          onClick={() => onUseSentenceStarter(context.sentenceStarter!)}
+          className="w-full text-left text-xs text-accent hover:text-accent/80 bg-accent/[0.06] rounded-lg p-2.5 transition-colors"
+        >
+          <span className="italic">&quot;{context.sentenceStarter}&quot;</span>
+          <span className="block mt-1 text-accent/70 font-medium">Tap to use as a starting point</span>
+        </button>
+      )}
+
+      {/* Auto-suggest reason */}
+      {context.suggestedReason && (
+        <button
+          onClick={() => onSuggestReason(context.suggestedReason as ReasonType)}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Suggested reason: <span className="text-accent font-medium">{REASONS.find(r => r.value === context.suggestedReason)?.label}</span>
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ============================================
 // REQUESTER FLOW
 // ============================================
 
@@ -116,19 +247,36 @@ interface RequestIntroSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   person: Person
+  floorId?: string
   onSend?: (request: Omit<IntroRequest, "id" | "from" | "status">) => Promise<void> | void
 }
 
-export function RequestIntroSheet({ open, onOpenChange, person, onSend }: RequestIntroSheetProps) {
+export function RequestIntroSheet({ open, onOpenChange, person, floorId, onSend }: RequestIntroSheetProps) {
   const [step, setStep] = useState<"compose" | "review" | "sent">("compose")
   const [reason, setReason] = useState<ReasonType | null>(null)
   const [message, setMessage] = useState("")
   const [connectionMode, setConnectionMode] = useState<ConnectionMode | null>(null)
   const [link, setLink] = useState("")
   const [sending, setSending] = useState(false)
+  const [sharedContext, setSharedContext] = useState<SharedContext | null>(null)
 
   const isMessageTooShort = message.length > 0 && message.length < 50
   const isValid = reason && message.length >= 50 && connectionMode
+
+  // Fetch shared context when sheet opens
+  useEffect(() => {
+    if (open && person.id) {
+      api
+        .get<SharedContext>(`/api/members/${person.id}/shared-context`)
+        .then((ctx) => setSharedContext(ctx))
+        .catch(() => {
+          // Silently fail — shared context is optional
+        })
+    }
+    if (!open) {
+      setSharedContext(null)
+    }
+  }, [open, person.id])
 
   const handleClose = () => {
     onOpenChange(false)
@@ -166,25 +314,18 @@ export function RequestIntroSheet({ open, onOpenChange, person, onSend }: Reques
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent 
-        side="right" 
+      <SheetContent
+        side="right"
         className="w-full sm:max-w-[460px] p-0 flex flex-col"
       >
         {step === "compose" && (
           <>
             {/* Header */}
             <SheetHeader className="p-6 pb-4 border-b border-border/50">
-              <div className="flex items-start justify-between">
-                <div>
-                  <SheetTitle className="text-xl font-serif">Request an intro</SheetTitle>
-                  <SheetDescription className="text-sm text-muted-foreground mt-1">
-                    Send a short, thoughtful note about why you'd like to connect.
-                  </SheetDescription>
-                </div>
-                <Button variant="ghost" size="icon" className="size-8 -mt-1 -mr-2" onClick={handleClose}>
-                  <X className="size-4" />
-                </Button>
-              </div>
+              <SheetTitle className="text-xl font-serif">Request an intro</SheetTitle>
+              <SheetDescription className="text-sm text-muted-foreground mt-1">
+                Send a short, thoughtful note about why you'd like to connect.
+              </SheetDescription>
             </SheetHeader>
 
             {/* Scrollable content */}
@@ -209,6 +350,19 @@ export function RequestIntroSheet({ open, onOpenChange, person, onSend }: Reques
                 </div>
               </div>
 
+              {/* Shared Ground Card (Opportunity 1) */}
+              {sharedContext && (
+                <SharedGroundCard
+                  context={sharedContext}
+                  onUseSentenceStarter={(starter) => {
+                    if (!message) setMessage(starter)
+                  }}
+                  onSuggestReason={(r) => {
+                    if (!reason) setReason(r)
+                  }}
+                />
+              )}
+
               {/* Reason selector */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium text-foreground">
@@ -218,6 +372,7 @@ export function RequestIntroSheet({ open, onOpenChange, person, onSend }: Reques
                   {REASONS.map((r) => {
                     const Icon = r.icon
                     const isSelected = reason === r.value
+                    const isSuggested = sharedContext?.suggestedReason === r.value && !reason
                     return (
                       <button
                         key={r.value}
@@ -227,6 +382,8 @@ export function RequestIntroSheet({ open, onOpenChange, person, onSend }: Reques
                           "border",
                           isSelected
                             ? "bg-primary text-primary-foreground border-primary"
+                            : isSuggested
+                            ? "bg-accent/10 border-accent/40 text-foreground"
                             : "bg-background border-border hover:border-primary/50 text-foreground"
                         )}
                       >
@@ -393,30 +550,39 @@ export function RequestIntroSheet({ open, onOpenChange, person, onSend }: Reques
           </>
         )}
 
+        {/* Opportunity 2: Warmer sent confirmation */}
         {step === "sent" && (
           <>
             {/* Content */}
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-              <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                <Check className="size-8 text-primary" />
+              <div className="size-16 rounded-full bg-accent/10 flex items-center justify-center mb-6 animate-celebrate-pulse">
+                <Heart className="size-7 text-accent" />
               </div>
-              <h2 className="text-xl font-serif text-foreground mb-2">Request sent</h2>
-              <p className="text-muted-foreground mb-8 max-w-[280px]">
-                {person.name.split(" ")[0]} can accept, pass, or suggest a different way to connect.
+              <h2 className="text-xl font-serif text-foreground mb-2 animate-warm-slide-up">
+                Your note is on its way to {person.name.split(" ")[0]}
+              </h2>
+              <p className="text-muted-foreground mb-8 max-w-[280px] animate-warm-slide-up" style={{ animationDelay: "0.1s" }}>
+                Thoughtful requests usually get responses within 48 hours.
               </p>
 
-              <div className="w-full space-y-4">
+              <div className="w-full space-y-4 animate-warm-slide-up" style={{ animationDelay: "0.2s" }}>
                 <div className="bg-muted/30 rounded-xl p-4 text-left">
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Status</p>
                   <p className="text-foreground flex items-center gap-2">
                     <Clock className="size-4 text-amber-500" />
-                    Pending
+                    Pending — {person.name.split(" ")[0]} will see your request soon
                   </p>
                 </div>
 
-                <p className="text-sm text-muted-foreground italic">
-                  Thoughtful, specific requests usually work better than broad networking asks.
-                </p>
+                {/* While you wait section */}
+                {person.floor && (
+                  <div className="bg-accent/[0.04] rounded-xl p-4 text-left">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">While you wait</p>
+                    <p className="text-sm text-muted-foreground">
+                      Explore more people on {person.floor} — you might find another interesting connection.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -792,9 +958,13 @@ export function SuggestPathModal({ open, onOpenChange, onSend }: SuggestPathModa
 interface ResponseCardProps {
   request: IntroRequest
   onDone?: () => void
+  suggestions?: SuggestionData | null
+  onViewProfile?: (memberId: string) => void
+  onKeepExploring?: () => void
 }
 
-export function AcceptedResponseCard({ request, onDone }: ResponseCardProps) {
+// Opportunity 2: Celebratory Acceptance
+export function AcceptedResponseCard({ request, onDone, onViewProfile }: ResponseCardProps) {
   const methodLabels: Record<string, string> = {
     email: "Share email",
     chat: "Open chat here",
@@ -802,46 +972,73 @@ export function AcceptedResponseCard({ request, onDone }: ResponseCardProps) {
     event: "Meet at an event",
   }
 
+  const methodCTAs: Record<string, string> = {
+    email: "Send your first message",
+    chat: "Start the conversation",
+    time: "Schedule a time",
+    event: "See event details",
+  }
+
   return (
-    <div className="bg-card border border-border/50 rounded-2xl p-5 space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="size-8 rounded-full bg-green-100 flex items-center justify-center">
-          <Check className="size-4 text-green-600" />
+    <div className="bg-card border border-accent/20 rounded-2xl overflow-hidden">
+      {/* Celebration header */}
+      <div className="bg-accent/[0.06] px-5 py-5 text-center">
+        <div className="size-12 rounded-full bg-accent/15 flex items-center justify-center mx-auto mb-3 animate-celebrate-pulse">
+          <Check className="size-6 text-accent" />
         </div>
-        <h3 className="font-medium text-foreground">{request.to.name} accepted your intro request</h3>
+        <h3 className="font-serif text-lg text-foreground animate-warm-slide-up">
+          {request.to.name} wants to connect!
+        </h3>
+        <p className="text-sm text-muted-foreground mt-1 animate-warm-slide-up" style={{ animationDelay: "0.1s" }}>
+          They accepted your intro request
+        </p>
       </div>
 
-      {request.response?.method && (
-        <div className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Connection method</p>
-          <p className="text-sm text-foreground">{methodLabels[request.response.method]}</p>
-        </div>
-      )}
-
-      {request.response?.note && (
-        <div className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Note</p>
-          <div className="bg-muted/30 rounded-xl p-3">
-            <p className="text-sm text-foreground">{request.response.note}</p>
+      <div className="p-5 space-y-4">
+        {request.response?.method && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Next step</p>
+            <p className="text-sm text-foreground">{methodLabels[request.response.method]}</p>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <Button variant="ghost" size="sm">View details</Button>
-        <Button size="sm" onClick={onDone}>Done</Button>
+        {request.response?.note && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Their note</p>
+            <div className="bg-muted/30 rounded-xl p-3">
+              <p className="text-sm text-foreground">{request.response.note}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 pt-2">
+          {request.response?.method && (
+            <Button className="flex-1 gap-1.5">
+              <ArrowRight className="size-3.5" />
+              {methodCTAs[request.response.method] ?? "Connect now"}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onViewProfile?.(request.to.id)}
+          >
+            See their full profile
+          </Button>
+        </div>
       </div>
     </div>
   )
 }
 
-export function NotNowResponseCard({ request, onDone }: ResponseCardProps) {
+// Opportunity 3: Graceful Not-Now
+export function NotNowResponseCard({ request, onDone, suggestions, onKeepExploring }: ResponseCardProps) {
   return (
     <div className="bg-card border border-border/50 rounded-2xl p-5 space-y-4">
       <div>
         <h3 className="font-medium text-foreground">Not available right now</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {request.to.name} isn't taking new intro requests at the moment.
+          {request.to.name} isn't taking new intro requests at the moment. That's okay — timing matters, and this isn't a reflection of you.
         </p>
       </div>
 
@@ -851,46 +1048,100 @@ export function NotNowResponseCard({ request, onDone }: ResponseCardProps) {
         </div>
       )}
 
+      {/* Real suggestions */}
+      {suggestions && suggestions.people.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Others you might connect with</p>
+          {suggestions.people.slice(0, 2).map((person) => (
+            <div key={person.id} className="bg-muted/30 rounded-xl p-3 flex items-center gap-3">
+              <Avatar className="size-8">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {person.fullName.split(" ").map(n => n[0]).join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">{person.fullName}</p>
+                <p className="text-xs text-muted-foreground truncate">{person.oneLineIntro}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center justify-end gap-3 pt-2">
-        <Button variant="ghost" size="sm">Browse other people</Button>
+        <Button variant="ghost" size="sm" className="gap-1.5" onClick={onKeepExploring}>
+          <RefreshCw className="size-3" />
+          Keep exploring
+        </Button>
         <Button size="sm" onClick={onDone}>Done</Button>
       </div>
     </div>
   )
 }
 
-export function PassedResponseCard({ request, onDone }: ResponseCardProps) {
+// Opportunity 3: Graceful Pass with real suggestions
+export function PassedResponseCard({ request, onDone, suggestions, onKeepExploring }: ResponseCardProps) {
   return (
     <div className="bg-card border border-border/50 rounded-2xl p-5 space-y-4">
       <div>
-        <h3 className="font-medium text-foreground">This intro wasn't a fit</h3>
+        <h3 className="font-medium text-foreground">Not the right fit this time</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          That happens. Here are a few other people or events that may be relevant.
+          Not every connection is a fit, and that's okay. The best ones often come from unexpected places.
         </p>
       </div>
 
-      {/* Placeholder suggestions */}
-      <div className="space-y-2">
-        <div className="bg-muted/30 rounded-xl p-3 flex items-center gap-3">
-          <Avatar className="size-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">SC</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">Similar person</p>
-            <p className="text-xs text-muted-foreground">Working on related projects</p>
-          </div>
+      {/* Real suggestions from API */}
+      {suggestions && suggestions.people.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">People you might click with</p>
+          {suggestions.people.slice(0, 3).map((person) => (
+            <div key={person.id} className="bg-muted/30 rounded-xl p-3 flex items-center gap-3">
+              <Avatar className="size-8">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {person.fullName.split(" ").map(n => n[0]).join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">{person.fullName}</p>
+                <p className="text-xs text-muted-foreground truncate">{person.oneLineIntro}</p>
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="bg-muted/30 rounded-xl p-3 flex items-center gap-3">
-          <Calendar className="size-8 text-muted-foreground p-1.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">Upcoming event</p>
-            <p className="text-xs text-muted-foreground">Good place to meet people</p>
-          </div>
+      )}
+
+      {/* Real upcoming events */}
+      {suggestions && suggestions.events.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Upcoming on the floor</p>
+          {suggestions.events.slice(0, 1).map((event) => (
+            <div key={event.id} className="bg-muted/30 rounded-xl p-3 flex items-center gap-3">
+              <Calendar className="size-8 text-muted-foreground p-1.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">{event.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  Floor {event.floorNumber} · {new Date(event.startsAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
+
+      {/* Fallback when no suggestions available */}
+      {(!suggestions || (suggestions.people.length === 0 && suggestions.events.length === 0)) && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground italic">
+            Browse other people on the floor — there are likely others working on similar things.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-3 pt-2">
-        <Button variant="ghost" size="sm">See suggestions</Button>
+        <Button variant="ghost" size="sm" className="gap-1.5" onClick={onKeepExploring}>
+          Keep exploring
+          <ArrowRight className="size-3" />
+        </Button>
         <Button size="sm" onClick={onDone}>Done</Button>
       </div>
     </div>

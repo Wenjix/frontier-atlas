@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Bell } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-client"
 import { introStatusReverseMap, introReasonMap, connectionReverseMap } from "@/lib/enum-maps"
 import { toast } from "sonner"
@@ -48,6 +49,28 @@ interface ApiIntroRequest {
     avatarUrl?: string | null
     profile?: { oneLineIntro?: string | null } | null
   }
+}
+
+interface SuggestedPerson {
+  id: string
+  fullName: string
+  avatarUrl: string | null
+  oneLineIntro: string
+  workingOn: string | null
+  sharedTopicCount: number
+}
+
+interface SuggestedEvent {
+  id: string
+  title: string
+  startsAt: string
+  floorNumber: string
+  floorName: string
+}
+
+interface SuggestionData {
+  people: SuggestedPerson[]
+  events: SuggestedEvent[]
 }
 
 type Tab = "received" | "sent"
@@ -113,6 +136,7 @@ const ALTERNATE_PATH_TYPE_MAP: Record<string, string> = {
 }
 
 export default function InboxPage() {
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>("received")
   const [receivedRequests, setReceivedRequests] = useState<ReturnType<typeof toFrontendRequest>[]>([])
   const [sentRequests, setSentRequests] = useState<ReturnType<typeof toFrontendRequest>[]>([])
@@ -121,6 +145,7 @@ export default function InboxPage() {
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null)
   const [activeRequestPerson, setActiveRequestPerson] = useState<{ id: string; name: string; avatar: string; intro: string } | null>(null)
   const [notificationCount, setNotificationCount] = useState(0)
+  const [suggestions, setSuggestions] = useState<SuggestionData | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -135,6 +160,11 @@ export default function InboxPage() {
       // Fetch notification count
       api.get<{ items: Array<{ read: boolean }> }>("/api/me/notifications").then(res => {
         setNotificationCount(res.items.filter(n => !n.read).length)
+      }).catch(() => {})
+
+      // Fetch suggestions for rejection recovery (Opportunity 3)
+      api.get<SuggestionData>("/api/me/suggested-people").then(res => {
+        setSuggestions(res)
       }).catch(() => {})
     } catch {
       toast.error("Failed to load inbox")
@@ -166,6 +196,10 @@ export default function InboxPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to respond")
     }
+  }
+
+  const handleKeepExploring = () => {
+    router.push("/")
   }
 
   const displayRequests = tab === "received" ? receivedRequests : sentRequests
@@ -267,13 +301,33 @@ export default function InboxPage() {
               }
 
               if (req.status === "accepted") {
-                return <AcceptedResponseCard key={req.id} request={req} />
+                return (
+                  <AcceptedResponseCard
+                    key={req.id}
+                    request={req}
+                    onViewProfile={(memberId) => router.push(`/members/${memberId}`)}
+                  />
+                )
               }
               if (req.status === "not-now") {
-                return <NotNowResponseCard key={req.id} request={req} />
+                return (
+                  <NotNowResponseCard
+                    key={req.id}
+                    request={req}
+                    suggestions={suggestions}
+                    onKeepExploring={handleKeepExploring}
+                  />
+                )
               }
               if (req.status === "passed") {
-                return <PassedResponseCard key={req.id} request={req} />
+                return (
+                  <PassedResponseCard
+                    key={req.id}
+                    request={req}
+                    suggestions={suggestions}
+                    onKeepExploring={handleKeepExploring}
+                  />
+                )
               }
               if (req.status === "alternate-path") {
                 return <AlternatePathResponseCard key={req.id} request={req} />

@@ -11,6 +11,7 @@ interface TowerSpineProps {
   onSelectFloor: (floorId: string) => void
   filter: "all" | FloorType
   onFilterChange: (filter: "all" | FloorType) => void
+  floorMemberCounts?: Record<string, number>
 }
 
 function FloorBadge({ number, isSelected }: { number: string; isSelected: boolean }) {
@@ -26,14 +27,16 @@ function FloorBadge({ number, isSelected }: { number: string; isSelected: boolea
   )
 }
 
-function FloorSlice({ 
-  floor, 
-  isSelected, 
-  onClick 
-}: { 
+function FloorSlice({
+  floor,
+  isSelected,
+  onClick,
+  memberCount
+}: {
   floor: Floor
   isSelected: boolean
-  onClick: () => void 
+  onClick: () => void
+  memberCount?: number
 }) {
   const accentColors = {
     thematic: "bg-floor-thematic",
@@ -68,11 +71,14 @@ function FloorSlice({
           <div className="flex items-center gap-2">
             <h3 className={cn(
               "text-sm truncate transition-colors",
-              isSelected 
-                ? "text-sidebar-foreground font-medium" 
+              isSelected
+                ? "text-sidebar-foreground font-medium"
                 : "text-sidebar-foreground/85"
             )}>
               {floor.name}
+              {memberCount != null && memberCount > 0 && (
+                <span className="text-xs text-sidebar-foreground/50"> ({memberCount})</span>
+              )}
             </h3>
             
             {/* Live dot indicator */}
@@ -96,11 +102,12 @@ function FloorSlice({
   )
 }
 
-export function TowerSpine({ 
-  selectedFloor, 
-  onSelectFloor, 
-  filter, 
-  onFilterChange 
+export function TowerSpine({
+  selectedFloor,
+  onSelectFloor,
+  filter,
+  onFilterChange,
+  floorMemberCounts
 }: TowerSpineProps) {
   const [searchQuery, setSearchQuery] = useState("")
   
@@ -176,6 +183,7 @@ export function TowerSpine({
                 floor={floor}
                 isSelected={selectedFloor === floor.id}
                 onClick={() => onSelectFloor(floor.id)}
+                memberCount={floorMemberCounts?.[floor.id]}
               />
             ))}
           </div>
