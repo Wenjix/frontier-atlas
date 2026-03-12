@@ -29,6 +29,7 @@ export interface MemberDetail {
   needsHelpWith?: string | null
   conversationStarter?: string | null
   websiteUrl?: string | null
+  topics?: string[]
   contextSignal?: ContextSignal
 }
 

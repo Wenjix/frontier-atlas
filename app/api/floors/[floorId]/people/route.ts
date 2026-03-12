@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireMember } from "@/lib/auth-helpers"
 import { formatApiError } from "@/lib/errors"
 import { AppError } from "@/lib/errors"
 import { paginationSchema } from "@/lib/validations/common"
 import { getFloorPeople, getFeaturedMembers } from "@/lib/services/directory-service"
+import { requireEitherMember } from "@/lib/telegram/dual-auth"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ floorId: string }> }
 ) {
   try {
-    await requireMember()
+    await requireEitherMember(request)
     const { floorId } = await params
     const searchParams = request.nextUrl.searchParams
 

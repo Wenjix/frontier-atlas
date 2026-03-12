@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireAuth } from "@/lib/auth-helpers"
 import { formatApiError, AppError } from "@/lib/errors"
 import { getContextSignal } from "@/lib/services/directory-service"
 import { visibilityReverseMap, opennessReverseMap } from "@/lib/enum-maps"
 import type { MemberDetail } from "@/lib/member-data"
+import { requireEitherAuth } from "@/lib/telegram/dual-auth"
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ memberId: string }> }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireEitherAuth(request)
     const { memberId } = await params
 
     const member = await prisma.member.findUnique({
@@ -37,7 +37,7 @@ export async function GET(
     if (visibility === "FLOOR" || visibility === "LEADS_ONLY") {
       // Get requesting user's member record
       const requestingMember = await prisma.member.findUnique({
-        where: { userId: user.id },
+        where: { userId: user.userId },
         include: {
           memberships: {
             where: { status: "ACTIVE" },
@@ -88,6 +88,7 @@ export async function GET(
       needsHelpWith: member.profile.needsHelpWith,
       conversationStarter: member.profile.conversationStarter,
       websiteUrl: member.profile.websiteUrl,
+      topics: member.profile.topics.map((t) => t.topic),
       contextSignal,
     }
 

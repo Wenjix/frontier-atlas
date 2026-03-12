@@ -18,7 +18,8 @@ export const authConfig = {
       if (
         pathname === "/" ||
         pathname.startsWith("/auth/") ||
-        pathname.startsWith("/api/")
+        pathname.startsWith("/api/") ||
+        pathname.startsWith("/tg")
       ) {
         return true
       }
