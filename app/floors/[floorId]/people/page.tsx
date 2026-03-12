@@ -1,38 +1,50 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useMemo } from "react"
+import { useState, useEffect } from "react"
 import { FloorPeoplePage } from "@/components/floor-people-page"
-import { floors } from "@/lib/floor-data"
-import { generateMockMembersForFloor } from "@/lib/member-data"
+import { api } from "@/lib/api-client"
+import type { FloorPeopleData } from "@/lib/member-data"
 
 export default function FloorPeopleRoute() {
   const params = useParams()
   const router = useRouter()
   const floorId = params.floorId as string
-  
-  // Find the floor from our data
-  const floor = useMemo(() => 
-    floors.find(f => f.id === floorId),
-    [floorId]
-  )
-  
-  // Generate mock data for this floor
-  const data = useMemo(() => {
-    if (!floor) return null
-    return generateMockMembersForFloor(floor.id, floor.name)
-  }, [floor])
-  
-  // Handle not found
-  if (!floor || !data) {
+
+  const [data, setData] = useState<FloorPeopleData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    api.get<FloorPeopleData>(`/api/floors/${floorId}/people`)
+      .then(setData)
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Failed to load")
+      })
+      .finally(() => setLoading(false))
+  }, [floorId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    )
+  }
+
+  if (error || !data) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center">
-          <h1 className="text-xl font-medium text-foreground mb-2">Floor not found</h1>
+          <h1 className="text-xl font-medium text-foreground mb-2">
+            {error || "Floor not found"}
+          </h1>
           <p className="text-sm text-muted-foreground mb-4">
-            The floor you're looking for doesn't exist.
+            Could not load people for this floor.
           </p>
-          <button 
+          <button
             onClick={() => router.push('/')}
             className="text-sm text-primary hover:underline"
           >
@@ -42,10 +54,11 @@ export default function FloorPeopleRoute() {
       </div>
     )
   }
-  
+
   return (
-    <FloorPeoplePage 
+    <FloorPeoplePage
       data={data}
+      floorId={floorId}
       onBack={() => router.push(`/?floor=${floorId}`)}
     />
   )

@@ -1,21 +1,28 @@
 "use client"
 
 import { useState } from "react"
+import { useSession, signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { TowerSpine } from "@/components/tower-spine"
 import { FloorBento } from "@/components/floor-bento"
 import { LobbyView } from "@/components/lobby-view"
 import { MobileNav } from "@/components/mobile-nav"
 import { getFloorById, type FloorType } from "@/lib/floor-data"
 import { cn } from "@/lib/utils"
-import { Search } from "lucide-react"
+import { Search, Inbox } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { OnboardingFlow } from "@/components/onboarding-flow"
 
 export default function TowerAtlasPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [selectedFloorId, setSelectedFloorId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | FloorType>("all")
   const [onboardingOpen, setOnboardingOpen] = useState(false)
+
+  const isAuthenticated = status === "authenticated"
+  const hasMember = !!session?.user?.memberId
 
   const selectedFloor = selectedFloorId ? getFloorById(selectedFloorId) : null
 
@@ -69,10 +76,32 @@ export default function TowerAtlasPage() {
             </div>
             
             {/* Right - Primary CTA */}
-            <div className="w-32 flex justify-end">
-              <Button size="sm" className="text-sm" onClick={() => setOnboardingOpen(true)}>
-                Start your profile
-              </Button>
+            <div className="flex justify-end gap-2">
+              {status === "loading" ? (
+                <div className="w-24 h-9" />
+              ) : (
+                <>
+                  {isAuthenticated && hasMember && (
+                    <Button variant="ghost" size="sm" className="text-sm" onClick={() => router.push("/inbox")}>
+                      <Inbox className="size-4 mr-1.5" />
+                      Inbox
+                    </Button>
+                  )}
+                  {isAuthenticated && hasMember ? (
+                    <Button size="sm" className="text-sm" onClick={() => setOnboardingOpen(true)}>
+                      Edit profile
+                    </Button>
+                  ) : isAuthenticated && !hasMember ? (
+                    <Button size="sm" className="text-sm" onClick={() => setOnboardingOpen(true)}>
+                      Start your profile
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="text-sm" onClick={() => signIn()}>
+                      Sign in
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
           </header>
 

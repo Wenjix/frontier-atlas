@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useMemo, useCallback, useEffect } from "react"
+import { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
-import { 
-  ArrowLeft, 
-  Search, 
-  X, 
+import {
+  ArrowLeft,
+  Search,
+  X,
   ExternalLink,
   UserPlus,
   Sparkles
@@ -14,22 +14,24 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
   SheetTitle,
   SheetDescription
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { 
-  type MemberListItem, 
-  type MemberDetail, 
+import {
+  type MemberListItem,
+  type MemberDetail,
   type FeaturedMember,
   type FloorPeopleData,
-  generateMockMemberDetail
 } from "@/lib/member-data"
 import { RequestIntroSheet } from "@/components/request-intro-flow"
+import { api } from "@/lib/api-client"
+import { introReasonMap, connectionMap } from "@/lib/enum-maps"
+import { toast } from "sonner"
 
 // ============================================
 // FloorPeopleHeader
@@ -490,12 +492,14 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 // ============================================
 interface FloorPeoplePageProps {
   data: FloorPeopleData
+  floorId: string
   onBack: () => void
 }
 
-export function FloorPeoplePage({ data, onBack }: FloorPeoplePageProps) {
+export function FloorPeoplePage({ data, floorId, onBack }: FloorPeoplePageProps) {
   // State
   const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<MemberListItem[] | null>(null)
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [memberDetail, setMemberDetail] = useState<MemberDetail | null>(null)
@@ -507,56 +511,70 @@ export function FloorPeoplePage({ data, onBack }: FloorPeoplePageProps) {
     avatar: string
     intro: string
   } | null>(null)
-  
-  // Filter members based on search
-  const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return data.members
-    
-    const query = searchQuery.toLowerCase()
-    return data.members.filter(m => 
-      m.fullName.toLowerCase().includes(query) ||
-      m.oneLineIntro.toLowerCase().includes(query)
-    )
-  }, [data.members, searchQuery])
-  
-  // Debounced search (simulated - in real app would trigger API call)
+
+  // Display members: search results or initial data
+  const filteredMembers = searchResults ?? data.members
+
+  // Debounced search via API
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // In real app: fetch members with search query
-    }, 250)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
-  
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+
+    if (!searchQuery.trim()) {
+      setSearchResults(null)
+      return
+    }
+
+    searchTimerRef.current = setTimeout(() => {
+      api.get<{ items: MemberListItem[] }>(
+        `/api/floors/${floorId}/people?q=${encodeURIComponent(searchQuery)}`
+      ).then(res => {
+        setSearchResults(res.items)
+      }).catch(() => {
+        // Fall back to client-side filter on error
+        const query = searchQuery.toLowerCase()
+        setSearchResults(
+          data.members.filter(m =>
+            m.fullName.toLowerCase().includes(query) ||
+            m.oneLineIntro.toLowerCase().includes(query)
+          )
+        )
+      })
+    }, 300)
+
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    }
+  }, [searchQuery, floorId, data.members])
+
   // Load member detail when selected
   const handleSelectMember = useCallback((memberId: string) => {
     setSelectedMemberId(memberId)
     setIsDrawerOpen(true)
     setMemberDetailLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      const detail = generateMockMemberDetail(memberId)
-      // Find the actual member to get their real name
-      const listMember = data.members.find(m => m.id === memberId)
-      if (listMember) {
-        detail.fullName = listMember.fullName
-        detail.oneLineIntro = listMember.oneLineIntro
-        detail.contextSignal = listMember.contextSignal
-      }
-      setMemberDetail(detail)
-      setMemberDetailLoading(false)
-    }, 300)
-  }, [data.members])
-  
+
+    api.get<MemberDetail>(`/api/members/${memberId}`)
+      .then((detail) => {
+        setMemberDetail(detail)
+      })
+      .catch(() => {
+        toast.error("Failed to load member profile")
+        setIsDrawerOpen(false)
+      })
+      .finally(() => {
+        setMemberDetailLoading(false)
+      })
+  }, [])
+
   // Close drawer
   const handleCloseDrawer = useCallback(() => {
     setIsDrawerOpen(false)
-    // Keep selection cached
   }, [])
-  
-  // Request intro
+
+  // Request intro — find member in current list or search results
   const handleRequestIntro = useCallback((memberId: string) => {
-    const member = data.members.find(m => m.id === memberId)
+    const allMembers = [...data.members, ...(searchResults ?? [])]
+    const member = allMembers.find(m => m.id === memberId)
     if (member) {
       setIntroTargetMember({
         id: member.id,
@@ -566,7 +584,7 @@ export function FloorPeoplePage({ data, onBack }: FloorPeoplePageProps) {
       })
       setIntroSheetOpen(true)
     }
-  }, [data.members])
+  }, [data.members, searchResults])
   
   return (
     <div className="h-full flex flex-col bg-background">
@@ -627,8 +645,15 @@ export function FloorPeoplePage({ data, onBack }: FloorPeoplePageProps) {
           open={introSheetOpen}
           onOpenChange={setIntroSheetOpen}
           person={introTargetMember}
-          onSend={(request) => {
-            console.log("Intro request sent:", request)
+          onSend={async (request) => {
+            await api.post("/api/intro-requests", {
+              recipientMemberId: introTargetMember.id,
+              reason: introReasonMap[request.reason],
+              note: request.message,
+              preferredConnection: connectionMap[request.connectionMode],
+              linkUrl: request.link || null,
+            })
+            toast.success("Intro request sent!")
             setIntroSheetOpen(false)
           }}
         />

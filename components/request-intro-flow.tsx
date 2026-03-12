@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { 
   Sheet, 
@@ -115,7 +116,7 @@ interface RequestIntroSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   person: Person
-  onSend?: (request: Omit<IntroRequest, "id" | "from" | "status">) => void
+  onSend?: (request: Omit<IntroRequest, "id" | "from" | "status">) => Promise<void> | void
 }
 
 export function RequestIntroSheet({ open, onOpenChange, person, onSend }: RequestIntroSheetProps) {
@@ -124,6 +125,7 @@ export function RequestIntroSheet({ open, onOpenChange, person, onSend }: Reques
   const [message, setMessage] = useState("")
   const [connectionMode, setConnectionMode] = useState<ConnectionMode | null>(null)
   const [link, setLink] = useState("")
+  const [sending, setSending] = useState(false)
 
   const isMessageTooShort = message.length > 0 && message.length < 50
   const isValid = reason && message.length >= 50 && connectionMode
@@ -140,16 +142,23 @@ export function RequestIntroSheet({ open, onOpenChange, person, onSend }: Reques
     }, 300)
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!reason || !connectionMode) return
-    onSend?.({
-      to: person,
-      reason,
-      message,
-      connectionMode,
-      link: link || undefined,
-    })
-    setStep("sent")
+    setSending(true)
+    try {
+      await onSend?.({
+        to: person,
+        reason,
+        message,
+        connectionMode,
+        link: link || undefined,
+      })
+      setStep("sent")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send request")
+    } finally {
+      setSending(false)
+    }
   }
 
   const getReasonLabel = (r: ReasonType) => REASONS.find(x => x.value === r)?.label || r
@@ -376,8 +385,10 @@ export function RequestIntroSheet({ open, onOpenChange, person, onSend }: Reques
 
             {/* Footer */}
             <div className="p-6 pt-4 border-t border-border/50 flex items-center justify-end gap-3">
-              <Button variant="ghost" onClick={() => setStep("compose")}>Edit</Button>
-              <Button onClick={handleSend}>Send request</Button>
+              <Button variant="ghost" onClick={() => setStep("compose")} disabled={sending}>Edit</Button>
+              <Button onClick={handleSend} disabled={sending}>
+                {sending ? "Sending..." : "Send request"}
+              </Button>
             </div>
           </>
         )}

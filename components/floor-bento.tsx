@@ -1,11 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { type Floor, type FloorType } from "@/lib/floor-data"
-import { 
-  Calendar, 
+import { api, ApiError } from "@/lib/api-client"
+import { introReasonMap, connectionMap } from "@/lib/enum-maps"
+import { toast } from "sonner"
+import {
+  Calendar,
   User,
   ArrowRight,
   MessageSquarePlus,
@@ -17,6 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { RequestIntroSheet } from "@/components/request-intro-flow"
+import type { FloorEvent, PersonToKnow } from "@/lib/floor-data"
 
 interface FloorBentoProps {
   floor: Floor
@@ -71,6 +76,7 @@ function BentoCard({
 
 export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: FloorBentoProps) {
   const router = useRouter()
+  const { data: session } = useSession()
   const isCommons = floor.type === "commons"
   const [introSheetOpen, setIntroSheetOpen] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<{
@@ -81,6 +87,47 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
     floor?: string
     openToIntros?: boolean
   } | null>(null)
+
+  // Live data from API
+  const [liveEvents, setLiveEvents] = useState<FloorEvent[] | null>(null)
+  const [livePeople, setLivePeople] = useState<PersonToKnow[] | null>(null)
+
+  useEffect(() => {
+    // Fetch upcoming events
+    api.get<{ items: Array<{ id: string; title: string; startsAt: string; hostName?: string; isRecurring?: boolean }> }>(
+      `/api/floors/${floor.id}/events?upcoming=true&pageSize=4`
+    ).then(res => {
+      setLiveEvents(res.items.map(e => ({
+        id: e.id,
+        title: e.title,
+        time: new Date(e.startsAt).toLocaleDateString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" }),
+        host: e.hostName,
+        recurring: e.isRecurring,
+      })))
+    }).catch(() => {
+      // Fall back to static data on error
+    })
+
+    // Fetch featured people (requires auth)
+    if (session?.user) {
+      api.get<{ items: Array<{ id: string; fullName: string; avatarUrl?: string | null; oneLineIntro: string }> }>(
+        `/api/floors/${floor.id}/people?pageSize=3`
+      ).then(res => {
+        setLivePeople(res.items.map(m => ({
+          id: m.id,
+          name: m.fullName,
+          avatar: m.fullName.split(" ").map(n => n[0]).join(""),
+          project: m.oneLineIntro,
+          whyNow: "On this floor",
+        })))
+      }).catch(() => {
+        // Fall back to static data on error
+      })
+    }
+  }, [floor.id, session?.user])
+
+  const displayEvents = liveEvents ?? floor.events
+  const displayPeople = livePeople ?? floor.peopleToKnow
 
   const handleRequestIntro = (person: typeof selectedPerson) => {
     setSelectedPerson(person)
@@ -185,7 +232,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
           <CardContent className="p-0">
             {/* Compact agenda - 3-4 rows with tighter rhythm */}
             <div className="space-y-2">
-              {floor.events.slice(0, 4).map((event) => (
+              {displayEvents.slice(0, 4).map((event) => (
                 <button
                   key={event.id}
                   onClick={() => onEventClick?.(event.id)}
@@ -211,7 +258,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
               ))}
             </div>
             
-            {floor.events.length > 4 && (
+            {displayEvents.length > 4 && (
               <Button variant="ghost" size="sm" className="mt-2 -ml-2 text-muted-foreground hover:text-foreground text-xs">
                 See full calendar
                 <ArrowRight className="size-3 ml-1" />
@@ -265,7 +312,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
                   {isCommons ? "People Around" : "People to Know This Week"}
                 </p>
                 <div className="space-y-3">
-                  {floor.peopleToKnow.slice(0, 2).map((person) => (
+                  {displayPeople.slice(0, 2).map((person) => (
                     <div
                       key={person.id}
                       className="flex items-start gap-3 hover:bg-muted/40 p-2 -mx-2 rounded-md transition-colors group"
@@ -339,7 +386,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
                 className="gap-1.5 justify-center"
                 onClick={() => {
                   // Default to first person to know for the "Request intro" button
-                  const firstPerson = floor.peopleToKnow[0]
+                  const firstPerson = displayPeople[0]
                   if (firstPerson) {
                     handleRequestIntro({
                       id: firstPerson.id,
@@ -375,8 +422,15 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
           open={introSheetOpen}
           onOpenChange={setIntroSheetOpen}
           person={selectedPerson}
-          onSend={(request) => {
-            console.log("Intro request sent:", request)
+          onSend={async (request) => {
+            await api.post("/api/intro-requests", {
+              recipientMemberId: selectedPerson!.id,
+              reason: introReasonMap[request.reason],
+              note: request.message,
+              preferredConnection: connectionMap[request.connectionMode],
+              linkUrl: request.link || null,
+            })
+            toast.success("Intro request sent!")
             setIntroSheetOpen(false)
           }}
         />

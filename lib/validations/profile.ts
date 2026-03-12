@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 export const profileDraftSchema = z.object({
+  fullName: z.string().max(100).optional(),
   oneLineIntro: z.string().max(200).optional(),
   workingOn: z.string().max(1000).optional(),
   curiousAbout: z.string().max(1000).optional(),

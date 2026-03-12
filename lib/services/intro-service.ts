@@ -171,7 +171,12 @@ export async function getReceivedRequests(
       where,
       include: {
         requester: {
-          select: { id: true, fullName: true, avatarUrl: true },
+          select: {
+            id: true,
+            fullName: true,
+            avatarUrl: true,
+            profile: { select: { oneLineIntro: true } },
+          },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -197,7 +202,12 @@ export async function getSentRequests(
       where,
       include: {
         recipient: {
-          select: { id: true, fullName: true, avatarUrl: true },
+          select: {
+            id: true,
+            fullName: true,
+            avatarUrl: true,
+            profile: { select: { oneLineIntro: true } },
+          },
         },
       },
       orderBy: { createdAt: "desc" },

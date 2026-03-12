@@ -1,6 +1,9 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { toast } from "sonner"
+import { api } from "@/lib/api-client"
+import { visibilityMap, opennessMap } from "@/lib/enum-maps"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -118,10 +121,32 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
     }, 300)
   }
 
-  const handlePublish = () => {
-    // Here you would save the profile data
-    console.log("Publishing profile:", data)
-    setStep(6) // Go to completion screen
+  const [publishing, setPublishing] = useState(false)
+
+  const handlePublish = async () => {
+    setPublishing(true)
+    try {
+      await api.put("/api/me/profile/draft", {
+        fullName: data.fullName,
+        oneLineIntro: data.oneLineIntro,
+        websiteUrl: data.website || null,
+        workingOn: data.workingOn,
+        curiousAbout: data.curiousAbout,
+        wantsToMeet: data.whoToMeet,
+        canHelpWith: data.helpOthers,
+        needsHelpWith: data.needHelp,
+        conversationStarter: data.conversationStarter || null,
+        visibility: visibilityMap[data.visibility],
+        introOpenness: opennessMap[data.openness],
+        topics: data.topics,
+      })
+      await api.post("/api/me/profile/publish")
+      setStep(6)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to publish profile")
+    } finally {
+      setPublishing(false)
+    }
   }
 
   return (
@@ -705,9 +730,9 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                     <Button variant="outline" onClick={() => setStep(1)}>
                       Edit answers
                     </Button>
-                    <Button onClick={handlePublish}>
+                    <Button onClick={handlePublish} disabled={publishing}>
                       <Check className="size-4 mr-2" />
-                      Publish profile
+                      {publishing ? "Publishing..." : "Publish profile"}
                     </Button>
                   </div>
                 )}

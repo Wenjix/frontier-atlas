@@ -34,10 +34,17 @@ export async function getProfile(memberId: string) {
   }
 }
 
-export async function saveDraft(memberId: string, data: ProfileDraftInput) {
-  const { topics, ...profileFields } = data
+export async function saveDraft(memberId: string, data: ProfileDraftInput & { fullName?: string }) {
+  const { topics, fullName, ...profileFields } = data
 
   await prisma.$transaction(async (tx) => {
+    if (fullName !== undefined) {
+      await tx.member.update({
+        where: { id: memberId },
+        data: { fullName },
+      })
+    }
+
     const profile = await tx.memberProfile.update({
       where: { memberId },
       data: profileFields,
