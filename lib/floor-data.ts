@@ -150,18 +150,3 @@ export const floors: FloorDefinition[] = [
     description: "Cross-pollination space for all communities to mingle. Host friends, investors, or enjoy panoramic city views.",
   },
 ]
-
-export function getFloorById(id: string): FloorDefinition | undefined {
-  return floors.find(floor => floor.id === id)
-}
-
-export function getFloorTypeColor(type: FloorType): string {
-  switch (type) {
-    case "thematic":
-      return "bg-floor-thematic"
-    case "commons":
-      return "bg-floor-commons"
-    case "private":
-      return "bg-floor-private"
-  }
-}

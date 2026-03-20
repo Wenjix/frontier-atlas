@@ -27,3 +27,8 @@ export const createInvitationsSchema = z.object({
 export const searchMembersSchema = z.object({
   query: z.string().min(1).max(100),
 })
+
+export const sendOnboardingEmailSchema = z.object({
+  subject: z.string().max(200).optional(),
+  dryRun: z.boolean().optional().default(false),
+})
