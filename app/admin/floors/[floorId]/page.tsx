@@ -123,6 +123,7 @@ export default function AdminFloorDetailPage() {
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
           <TabsTrigger value="roster">Roster</TabsTrigger>
+          <TabsTrigger value="email">Email</TabsTrigger>
         </TabsList>
 
         <TabsContent value="metadata" className="mt-4">
@@ -135,6 +136,10 @@ export default function AdminFloorDetailPage() {
 
         <TabsContent value="roster" className="mt-4">
           <RosterTab floorId={floorId} />
+        </TabsContent>
+
+        <TabsContent value="email" className="mt-4">
+          <EmailTab floor={floor} />
         </TabsContent>
       </Tabs>
     </div>
@@ -642,6 +647,145 @@ function RosterTab({ floorId }: { floorId: string }) {
             </div>
           </div>
         </>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Tab 4: Email
+// ---------------------------------------------------------------------------
+
+interface PreviewRecipient {
+  email: string
+  name: string
+}
+
+interface PreviewResponse {
+  dryRun: boolean
+  recipients: PreviewRecipient[]
+  total: number
+  skipped: number
+}
+
+interface SendResponse {
+  sent: number
+  failed: number
+  skipped: number
+  total: number
+}
+
+function EmailTab({ floor }: { floor: FloorDetail }) {
+  const [subject, setSubject] = useState(
+    `Welcome to Floor ${floor.name} | Frontier Atlas`
+  )
+  const [sending, setSending] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
+  const [preview, setPreview] = useState<PreviewResponse | null>(null)
+  const [result, setResult] = useState<SendResponse | null>(null)
+
+  const handlePreview = async () => {
+    setPreviewing(true)
+    setResult(null)
+    try {
+      const res = await api.post<PreviewResponse>(
+        `/api/admin/floors/${floor.id}/send-onboarding-email`,
+        { subject, dryRun: true }
+      )
+      setPreview(res)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to preview")
+    } finally {
+      setPreviewing(false)
+    }
+  }
+
+  const handleSend = async () => {
+    if (!preview) return
+    const confirmed = window.confirm(
+      `Send onboarding email to ${preview.recipients.length} members?`
+    )
+    if (!confirmed) return
+
+    setSending(true)
+    try {
+      const res = await api.post<SendResponse>(
+        `/api/admin/floors/${floor.id}/send-onboarding-email`,
+        { subject, dryRun: false }
+      )
+      setResult(res)
+      setPreview(null)
+      toast.success(`Sent ${res.sent} emails`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send")
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="email-subject">Subject</Label>
+        <Input
+          id="email-subject"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button variant="outline" onClick={handlePreview} disabled={previewing}>
+          {previewing && <Spinner className="mr-2" />}
+          Preview Recipients
+        </Button>
+        <Button onClick={handleSend} disabled={!preview || sending}>
+          {sending && <Spinner className="mr-2" />}
+          Send Onboarding Email
+        </Button>
+      </div>
+
+      {preview && (
+        <div className="space-y-3 rounded-md border p-4">
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary">
+              {preview.recipients.length} recipient{preview.recipients.length !== 1 ? "s" : ""}
+            </Badge>
+            <Badge variant="outline">
+              {preview.skipped} skipped (already sent)
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {preview.total} eligible total
+            </span>
+          </div>
+          {preview.recipients.length > 0 && (
+            <ul className="space-y-1 text-sm">
+              {preview.recipients.map((r) => (
+                <li key={r.email} className="text-muted-foreground">
+                  {r.name} &mdash; {r.email}
+                </li>
+              ))}
+            </ul>
+          )}
+          {preview.recipients.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No new recipients. All eligible members have already been emailed.
+            </p>
+          )}
+        </div>
+      )}
+
+      {result && (
+        <div className="space-y-2 rounded-md border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
+          <h3 className="text-sm font-semibold">Send Complete</h3>
+          <div className="flex items-center gap-3">
+            <Badge variant="default">{result.sent} sent</Badge>
+            {result.failed > 0 && (
+              <Badge variant="destructive">{result.failed} failed</Badge>
+            )}
+            <Badge variant="outline">{result.skipped} skipped</Badge>
+          </div>
+        </div>
       )}
     </div>
   )
