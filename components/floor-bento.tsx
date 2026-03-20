@@ -14,7 +14,8 @@ import {
   ArrowRight,
   MessageSquarePlus,
   UserPlus,
-  ChevronLeft
+  ChevronLeft,
+  Mail
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -442,14 +443,33 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
                 <UserPlus className="size-3.5" />
                 Request intro
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="text-muted-foreground hover:text-foreground justify-center"
                 onClick={() => router.push(`/floors/${floor.id}/people`)}
               >
                 Browse all people
               </Button>
+              {session?.user?.memberId && displayLeads.some(l => l.id === session.user.memberId) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 justify-center"
+                  onClick={async () => {
+                    if (!confirm(`Send onboarding email to all members on Floor ${floor.number}?`)) return
+                    try {
+                      const res = await api.post(`/api/floors/${floor.id}/send-onboarding-email`, { dryRun: false })
+                      toast.success(`Sent ${(res as any).sent} onboarding emails`)
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Failed to send emails")
+                    }
+                  }}
+                >
+                  <Mail className="size-3.5" />
+                  Send onboarding email
+                </Button>
+              )}
             </div>
           </div>
         </BentoCard>
