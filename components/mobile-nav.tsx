@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { floors, type Floor, type FloorType } from "@/lib/floor-data"
+import { floors, type FloorDefinition, type FloorType } from "@/lib/floor-data"
 import { Building2, ChevronDown, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 
 interface MobileNavProps {
-  selectedFloor: Floor | null
+  selectedFloor: FloorDefinition | null
   onSelectFloor: (floorId: string) => void
   filter: "all" | FloorType
   onFilterChange: (filter: "all" | FloorType) => void
@@ -124,9 +124,6 @@ export function MobileNav({
                       {floor.number === "B" ? "Basement" : `Floor ${floor.number}`}
                     </p>
                     <p className="font-medium text-sm">{floor.name}</p>
-                    {floor.signal && (
-                      <p className="text-xs text-sidebar-foreground/50">{floor.signal}</p>
-                    )}
                   </div>
                 </div>
               </button>

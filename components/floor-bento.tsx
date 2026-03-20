@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
-import { type Floor, type FloorType } from "@/lib/floor-data"
+import { type FloorDefinition, type FloorType } from "@/lib/floor-data"
 import { api, ApiError } from "@/lib/api-client"
 import { introReasonMap, connectionMap } from "@/lib/enum-maps"
 import { toast } from "sonner"
@@ -19,12 +19,37 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RequestIntroSheet } from "@/components/request-intro-flow"
-import type { FloorEvent, PersonToKnow } from "@/lib/floor-data"
+
+// Local interfaces for data shapes fetched from API
+// (these were removed from floor-data.ts during the FloorDefinition rewrite)
+interface FloorLead {
+  id: string
+  name: string
+  role: string
+  avatar: string | null
+  helpsWith: string
+}
+
+interface FloorEvent {
+  id: string
+  title: string
+  time: string
+  host?: string
+  recurring?: boolean
+}
+
+interface PersonToKnow {
+  id: string
+  name: string
+  avatar: string
+  project: string
+  whyNow: string
+}
 
 interface FloorBentoProps {
-  floor: Floor
+  floor: FloorDefinition
   onPersonClick?: (personId: string) => void
   onEventClick?: (eventId: string) => void
   onBack?: () => void
@@ -89,11 +114,27 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
   } | null>(null)
 
   // Live data from API
+  const [liveLeads, setLiveLeads] = useState<FloorLead[] | null>(null)
   const [liveEvents, setLiveEvents] = useState<FloorEvent[] | null>(null)
   const [livePeople, setLivePeople] = useState<PersonToKnow[] | null>(null)
   const [livePulse, setLivePulse] = useState<{ signals: string[]; summary: string } | null>(null)
 
   useEffect(() => {
+    // Fetch floor leads from DB
+    api.get<Array<{ memberId: string; fullName: string; avatarUrl: string | null; role: string; helpsWith: string | null }>>(
+      `/api/floors/${floor.id}/leads`
+    ).then(res => {
+      setLiveLeads(res.map(l => ({
+        id: l.memberId,
+        name: l.fullName,
+        role: l.role,
+        avatar: l.avatarUrl,
+        helpsWith: l.helpsWith ?? "",
+      })))
+    }).catch(() => {
+      // No fallback — leads come from DB only
+    })
+
     // Fetch upcoming events
     api.get<{ items: Array<{ id: string; title: string; startsAt: string; hostName?: string; isRecurring?: boolean }> }>(
       `/api/floors/${floor.id}/events?upcoming=true&pageSize=4`
@@ -136,9 +177,10 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
     }
   }, [floor.id, session?.user])
 
-  const displayEvents = liveEvents ?? floor.events
-  const displayPeople = livePeople ?? floor.peopleToKnow
-  const displayPulse = livePulse ?? floor.happeningNow
+  const displayLeads = liveLeads ?? []
+  const displayEvents = liveEvents ?? []
+  const displayPeople = livePeople ?? []
+  const displayPulse = livePulse ?? { signals: [], summary: "" }
 
   const handleRequestIntro = (person: typeof selectedPerson) => {
     setSelectedPerson(person)
@@ -294,26 +336,31 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
                   {isCommons ? "Hosts" : "Floor Leads"}
                 </p>
                 <div className="space-y-3">
-                  {floor.leads.slice(0, 2).map((lead) => (
-                    <button
-                      key={lead.id}
-                      onClick={() => onPersonClick?.(lead.id)}
-                      className="flex items-start gap-3 w-full text-left hover:bg-muted/40 p-2 -mx-2 rounded-md transition-colors"
-                    >
-                      <Avatar className="size-9 shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                          {lead.avatar}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground">{lead.name}</p>
-                        <p className="text-xs text-muted-foreground">{lead.role}</p>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">
-                          {lead.helpsWith}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
+                  {displayLeads.length === 0 ? (
+                    <p className="text-sm text-muted-foreground/60 italic">No leads assigned yet</p>
+                  ) : (
+                    displayLeads.slice(0, 2).map((lead) => (
+                      <button
+                        key={lead.id}
+                        onClick={() => onPersonClick?.(lead.id)}
+                        className="flex items-start gap-3 w-full text-left hover:bg-muted/40 p-2 -mx-2 rounded-md transition-colors"
+                      >
+                        <Avatar className="size-9 shrink-0">
+                          {lead.avatar && <AvatarImage src={lead.avatar} />}
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                            {lead.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground">{lead.name}</p>
+                          <p className="text-xs text-muted-foreground">{lead.role}</p>
+                          <p className="text-xs text-muted-foreground/70 mt-0.5">
+                            {lead.helpsWith}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
               

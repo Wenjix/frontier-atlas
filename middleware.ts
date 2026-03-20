@@ -7,5 +7,6 @@ export const config = {
   matcher: [
     "/inbox",
     "/floors/:floorId/people",
+    "/admin/:path*",
   ],
 }

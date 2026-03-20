@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { floors, type Floor, type FloorType } from "@/lib/floor-data"
+import { floors, type FloorDefinition, type FloorType } from "@/lib/floor-data"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
@@ -33,7 +33,7 @@ function FloorSlice({
   onClick,
   memberCount
 }: {
-  floor: Floor
+  floor: FloorDefinition
   isSelected: boolean
   onClick: () => void
   memberCount?: number
@@ -80,22 +80,7 @@ function FloorSlice({
                 <span className="text-xs text-sidebar-foreground/50"> ({memberCount})</span>
               )}
             </h3>
-            
-            {/* Live dot indicator */}
-            {floor.signal && !isSelected && (
-              <span className="size-1.5 rounded-full bg-sidebar-primary/60 shrink-0" aria-hidden="true" />
-            )}
           </div>
-          
-          {/* Status line - one line only when not selected, up to two when selected */}
-          {floor.signal && (
-            <p className={cn(
-              "text-xs text-sidebar-foreground/50 truncate mt-0.5",
-              isSelected && "text-sidebar-foreground/60"
-            )}>
-              {floor.signal}
-            </p>
-          )}
         </div>
       </div>
     </button>

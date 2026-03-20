@@ -78,7 +78,12 @@ model Floor {
   number           String    @unique
   name             String
   icon             String?
+  nickname         String?
   shortDescription String?
+  description      String?   @db.Text
+  tags             String[]
+  bestFor          String?
+  character        String?
   floorType        FloorType
   isActive         Boolean   @default(true)
   createdAt        DateTime  @default(now())

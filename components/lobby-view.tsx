@@ -51,19 +51,26 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
   const [suggestedEvents, setSuggestedEvents] = useState<SuggestedEvent[] | null>(null)
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      // Not authenticated — show empty states instead of loading indicators
+      setSuggestedPeople([])
+      setSuggestedEvents([])
+      return
+    }
 
     api.get<ActivitySummary>("/api/tower/activity-summary").then(res => {
       setActivitySummary(res)
     }).catch(() => {
-      // Fall back to no summary on error
+      // No summary available
     })
 
     api.get<SuggestedPeopleResponse>("/api/me/suggested-people?limit=3").then(res => {
       setSuggestedPeople(res.people)
       setSuggestedEvents(res.events)
     }).catch(() => {
-      // Fall back to static data on error
+      // API unavailable — show empty states
+      setSuggestedPeople([])
+      setSuggestedEvents([])
     })
   }, [isAuthenticated])
 
@@ -74,18 +81,7 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
     floors.find(f => f.id === "floor-7"),  // Makerspace
   ].filter(Boolean)
 
-  // Tonight/Today events for Card B
-  const staticEvents = floors
-    .flatMap(floor => floor.events.map(event => ({
-      ...event,
-      floorName: floor.name,
-      floorNumber: floor.number,
-      floorId: floor.id
-    })))
-    .filter(event => !event.recurring)
-    .slice(0, 4)
-
-  // Use live events when available, fall back to static
+  // Tonight/Today events from API
   const todayEvents = suggestedEvents
     ? suggestedEvents.map(e => ({
         id: e.id,
@@ -95,15 +91,9 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
         floorNumber: e.floorNumber,
         floorId: `floor-${e.floorNumber}`,
       }))
-    : staticEvents
+    : null
 
-  // People to know - use live data when available, fall back to static
-  const staticPeople = [
-    { name: "Kai", initials: "K", reason: "helps newcomers get oriented" },
-    { name: "Maya", initials: "M", reason: "hosting demo feedback this week" },
-    { name: "Riley", initials: "R", reason: "often helps builders get started in Makerspace" },
-  ]
-
+  // People to know from API
   const peopleToKnow = suggestedPeople
     ? suggestedPeople.map(p => ({
         name: p.fullName,
@@ -112,7 +102,7 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
         avatarUrl: p.avatarUrl,
         sharedTopicCount: p.sharedTopicCount,
       }))
-    : staticPeople
+    : null
 
   // Good places to start for Card G
   const placesToStart = [
@@ -168,18 +158,26 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
                 <h2 className="text-sm font-medium text-foreground">Tonight / Today</h2>
               </div>
               <div className="space-y-3">
-                {todayEvents.slice(0, 3).map((event, i) => (
-                  <button
-                    key={i}
-                    onClick={() => onSelectFloor(event.floorId)}
-                    className="flex items-start gap-2 w-full text-left hover:bg-muted/50 p-1.5 -mx-1.5 rounded-md transition-colors group"
-                  >
-                    <span className="text-xs text-muted-foreground shrink-0 w-12">{event.time.split(",")[0]}</span>
-                    <span className="text-sm text-foreground group-hover:text-primary transition-colors">
-                      Floor {event.floorNumber} · {event.title}
-                    </span>
-                  </button>
-                ))}
+                {todayEvents ? (
+                  todayEvents.length > 0 ? (
+                    todayEvents.slice(0, 3).map((event, i) => (
+                      <button
+                        key={i}
+                        onClick={() => onSelectFloor(event.floorId)}
+                        className="flex items-start gap-2 w-full text-left hover:bg-muted/50 p-1.5 -mx-1.5 rounded-md transition-colors group"
+                      >
+                        <span className="text-xs text-muted-foreground shrink-0 w-12">{event.time.split(",")[0]}</span>
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                          Floor {event.floorNumber} · {event.title}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No events scheduled today</p>
+                  )
+                ) : (
+                  <p className="text-sm text-muted-foreground animate-pulse">Loading events...</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -209,9 +207,6 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                           {floor.description}
                         </p>
-                        {floor.signal && (
-                          <p className="text-xs text-primary mt-1.5">{floor.signal}</p>
-                        )}
                       </div>
                     </div>
                   </button>
@@ -276,19 +271,27 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
             <CardContent className="p-5">
               <h2 className="text-sm font-medium text-foreground mb-4">People to Know</h2>
               <div className="space-y-3">
-                {peopleToKnow.map((person, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <Avatar className="size-8 shrink-0">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        {person.initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">{person.name}</p>
-                      <p className="text-xs text-muted-foreground">{person.reason}</p>
-                    </div>
-                  </div>
-                ))}
+                {peopleToKnow ? (
+                  peopleToKnow.length > 0 ? (
+                    peopleToKnow.map((person, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <Avatar className="size-8 shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {person.initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{person.name}</p>
+                          <p className="text-xs text-muted-foreground">{person.reason}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Complete your profile to get suggestions</p>
+                  )
+                ) : (
+                  <p className="text-sm text-muted-foreground animate-pulse">Loading suggestions...</p>
+                )}
               </div>
             </CardContent>
           </Card>
