@@ -11,6 +11,15 @@ node_modules/
 .DS_Store
 /lib/generated/prisma
 
+# Build artifacts
+*.log
+tsconfig.tsbuildinfo
+
+# Planning docs (not source code)
+plan.md
+v1-plan.md
+onboarding-upgrade-plan.md
+
 # Dolt database files (added by bd init)
 .dolt/
 *.db
