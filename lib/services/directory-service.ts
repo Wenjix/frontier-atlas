@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { Prisma } from "@/lib/generated/prisma/client"
+import { Prisma, type ProfileVisibility } from "@/lib/generated/prisma/client"
 import { getHostingSoonMemberIds } from "@/lib/services/event-service"
 import type { ContextSignal, FeaturedMember, MemberListItem } from "@/lib/member-data"
 
@@ -16,7 +16,7 @@ export async function getFloorPeople(
   const { search, page = 1, pageSize = 20 } = options
   const skip = (page - 1) * pageSize
 
-  const visibilityFilter = { in: ["FLOOR", "TOWER"] as const }
+  const visibilityFilter = { in: ["FLOOR", "TOWER"] as ProfileVisibility[] }
   const searchTerm = search?.trim()
 
   const where: Prisma.MemberFloorMembershipWhereInput = {

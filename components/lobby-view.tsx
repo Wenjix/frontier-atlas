@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { floors } from "@/lib/floor-data"
+import type { FloorDefinition } from "@/lib/floor-data"
 import { api } from "@/lib/api-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -40,12 +40,13 @@ interface SuggestedPeopleResponse {
 }
 
 interface LobbyViewProps {
+  floors: FloorDefinition[]
   onSelectFloor: (floorId: string) => void
   onStartProfile?: () => void
   isAuthenticated?: boolean
 }
 
-export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: LobbyViewProps) {
+export function LobbyView({ floors, onSelectFloor, onStartProfile, isAuthenticated }: LobbyViewProps) {
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null)
   const [suggestedPeople, setSuggestedPeople] = useState<SuggestedPerson[] | null>(null)
   const [suggestedEvents, setSuggestedEvents] = useState<SuggestedEvent[] | null>(null)

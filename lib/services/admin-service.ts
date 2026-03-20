@@ -1,6 +1,7 @@
 import crypto from "crypto"
 import { prisma } from "@/lib/prisma"
 import { AppError } from "@/lib/errors"
+import { sendEmail } from "@/lib/services/email-service"
 import type { MembershipRole, InvitationStatus } from "@/lib/generated/prisma/client"
 
 // ─── Floor Admin ───
@@ -281,6 +282,27 @@ export async function createBatchInvitations(
       })
     )
   )
+
+  // Fire-and-forget: send invitation emails without blocking
+  const floorName = floor.name
+  for (const inv of invitationsToCreate) {
+    const claimUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/invitations/claim?token=${inv.token}`
+
+    sendEmail({
+      to: inv.email,
+      subject: `You're invited to Frontier Atlas`,
+      html: `<p>You've been invited to join <strong>${floorName}</strong> on Frontier Atlas.</p>
+            <p><a href="${claimUrl}" style="display:inline-block;padding:12px 24px;background:#8B6914;color:white;text-decoration:none;border-radius:8px;">Accept Invitation</a></p>
+            <p style="color:#666;font-size:14px;">Or copy this link: ${claimUrl}</p>`,
+      emailType: "INVITATION",
+      floorId,
+    }).catch((err) =>
+      console.error(
+        `[admin-service] Failed to send invitation email to ${inv.email}:`,
+        err
+      )
+    )
+  }
 
   return invitationsToCreate.map(({ email, token }) => ({ email, token }))
 }

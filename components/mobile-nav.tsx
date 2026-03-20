@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { floors, type FloorDefinition, type FloorType } from "@/lib/floor-data"
+import type { FloorDefinition, FloorType } from "@/lib/floor-data"
 import { Building2, ChevronDown, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,14 +14,16 @@ import {
 } from "@/components/ui/sheet"
 
 interface MobileNavProps {
+  floors: FloorDefinition[]
   selectedFloor: FloorDefinition | null
   onSelectFloor: (floorId: string) => void
   filter: "all" | FloorType
   onFilterChange: (filter: "all" | FloorType) => void
 }
 
-export function MobileNav({ 
-  selectedFloor, 
+export function MobileNav({
+  floors,
+  selectedFloor,
   onSelectFloor,
   filter,
   onFilterChange

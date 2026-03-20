@@ -7,7 +7,8 @@ import { TowerSpine } from "@/components/tower-spine"
 import { FloorBento } from "@/components/floor-bento"
 import { LobbyView } from "@/components/lobby-view"
 import { MobileNav } from "@/components/mobile-nav"
-import { getFloorById, type FloorType } from "@/lib/floor-data"
+import { useFloors } from "@/hooks/use-floors"
+import type { FloorType } from "@/lib/floor-data"
 import { api } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -19,6 +20,7 @@ import { OnboardingFlow } from "@/components/onboarding-flow"
 export default function TowerAtlasPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { floors, isLoading: floorsLoading } = useFloors()
   const [selectedFloorId, setSelectedFloorId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | FloorType>("all")
   const [onboardingOpen, setOnboardingOpen] = useState(false)
@@ -69,7 +71,7 @@ export default function TowerAtlasPage() {
     setOnboardingOpen(true)
   }
 
-  const selectedFloor = selectedFloorId ? getFloorById(selectedFloorId) : null
+  const selectedFloor = selectedFloorId ? floors.find(f => f.id === selectedFloorId) : null
 
   const handleSelectFloor = (floorId: string) => {
     setSelectedFloorId(floorId)
@@ -80,6 +82,7 @@ export default function TowerAtlasPage() {
       {/* Mobile Navigation */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 p-3 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur-sm border-b border-border">
         <MobileNav
+          floors={floors}
           selectedFloor={selectedFloor ?? null}
           onSelectFloor={handleSelectFloor}
           filter={filter}
@@ -92,6 +95,7 @@ export default function TowerAtlasPage() {
         {/* Tower Spine - Left Panel (320-336px per spec) */}
         <div className="w-[336px] shrink-0">
           <TowerSpine
+            floors={floors}
             selectedFloor={selectedFloorId}
             onSelectFloor={handleSelectFloor}
             onHome={() => setSelectedFloorId(null)}
@@ -171,7 +175,7 @@ export default function TowerAtlasPage() {
               onBack={() => setSelectedFloorId(null)}
             />
             ) : (
-              <LobbyView onSelectFloor={handleSelectFloor} onStartProfile={() => setOnboardingOpen(true)} isAuthenticated={isAuthenticated} />
+              <LobbyView floors={floors} onSelectFloor={handleSelectFloor} onStartProfile={() => setOnboardingOpen(true)} isAuthenticated={isAuthenticated} />
             )}
           </main>
         </div>
@@ -188,7 +192,7 @@ export default function TowerAtlasPage() {
             onBack={() => setSelectedFloorId(null)}
           />
         ) : (
-          <LobbyView onSelectFloor={handleSelectFloor} onStartProfile={() => setOnboardingOpen(true)} isAuthenticated={isAuthenticated} />
+          <LobbyView floors={floors} onSelectFloor={handleSelectFloor} onStartProfile={() => setOnboardingOpen(true)} isAuthenticated={isAuthenticated} />
         )}
       </div>
 

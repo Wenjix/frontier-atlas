@@ -1,12 +1,13 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { floors, type FloorDefinition, type FloorType } from "@/lib/floor-data"
+import type { FloorDefinition, FloorType } from "@/lib/floor-data"
 import { Search, BookOpen, Home } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 
 interface TowerSpineProps {
+  floors: FloorDefinition[]
   selectedFloor: string | null
   onSelectFloor: (floorId: string) => void
   onHome: () => void
@@ -89,6 +90,7 @@ function FloorSlice({
 }
 
 export function TowerSpine({
+  floors,
   selectedFloor,
   onSelectFloor,
   onHome,
