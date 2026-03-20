@@ -58,7 +58,7 @@ interface RosterMember {
 }
 
 interface RosterResponse {
-  members: RosterMember[]
+  items: RosterMember[]
   total: number
   page: number
   pageSize: number
@@ -66,7 +66,7 @@ interface RosterResponse {
 
 interface MemberSearchResult {
   id: string
-  name: string
+  fullName: string
   email: string
 }
 
@@ -375,7 +375,7 @@ function LeadsTab({ floorId }: { floorId: string }) {
         memberId: selectedMember.id,
         role: selectedRole,
       })
-      toast.success(`Assigned ${selectedMember.name} as ${selectedRole}`)
+      toast.success(`Assigned ${selectedMember.fullName} as ${selectedRole}`)
       setSelectedMember(null)
       setSearchQuery("")
       setSearchResults([])
@@ -453,11 +453,11 @@ function LeadsTab({ floorId }: { floorId: string }) {
                   className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-accent text-left"
                   onClick={() => {
                     setSelectedMember(member)
-                    setSearchQuery(member.name)
+                    setSearchQuery(member.fullName)
                     setSearchResults([])
                   }}
                 >
-                  <span className="font-medium">{member.name}</span>
+                  <span className="font-medium">{member.fullName}</span>
                   <span className="text-muted-foreground">{member.email}</span>
                 </button>
               ))}
@@ -482,7 +482,7 @@ function LeadsTab({ floorId }: { floorId: string }) {
             </div>
             <Button onClick={handleAssign} disabled={assigning}>
               {assigning && <Spinner className="mr-2" />}
-              Assign {selectedMember.name}
+              Assign {selectedMember.fullName}
             </Button>
           </div>
         )}
@@ -497,7 +497,7 @@ function LeadsTab({ floorId }: { floorId: string }) {
 
 function RosterTab({ floorId }: { floorId: string }) {
   const [roster, setRoster] = useState<RosterResponse>({
-    members: [],
+    items: [],
     total: 0,
     page: 1,
     pageSize: 20,

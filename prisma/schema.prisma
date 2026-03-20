@@ -71,6 +71,7 @@ model Member {
   notifications         Notification[]
   hostedEvents          Event[]
   telegramLink          MemberTelegramLink?
+  emailLogs             EmailLog[]
 }
 
 model Floor {
@@ -92,6 +93,7 @@ model Floor {
   invitations Invitation[]
   profiles    MemberProfile[]          @relation("HomeFloor")
   events      Event[]
+  emailLogs   EmailLog[]
 }
 
 model Invitation {
@@ -211,6 +213,26 @@ model Event {
   host  Member? @relation(fields: [hostMemberId], references: [id])
 
   @@index([floorId, startsAt])
+}
+
+// ─── Email Models ───
+
+model EmailLog {
+  id             String   @id @default(cuid())
+  recipientEmail String
+  memberId       String?
+  floorId        String?
+  emailType      String
+  subject        String
+  status         String
+  error          String?
+  sentAt         DateTime @default(now())
+
+  member         Member?  @relation(fields: [memberId], references: [id])
+  floor          Floor?   @relation(fields: [floorId], references: [id])
+
+  @@index([floorId, emailType])
+  @@index([recipientEmail])
 }
 
 // ─── Telegram Models ───

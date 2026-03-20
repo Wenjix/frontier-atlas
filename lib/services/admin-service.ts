@@ -338,7 +338,10 @@ export async function getInvitations(
 export async function searchMembers(query: string) {
   const members = await prisma.member.findMany({
     where: {
-      fullName: { contains: query, mode: "insensitive" },
+      OR: [
+        { fullName: { contains: query, mode: "insensitive" } },
+        { user: { email: { contains: query, mode: "insensitive" } } },
+      ],
     },
     take: 10,
     orderBy: { fullName: "asc" },
