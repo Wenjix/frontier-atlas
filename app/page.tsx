@@ -10,6 +10,7 @@ import { MobileNav } from "@/components/mobile-nav"
 import { getFloorById, type FloorType } from "@/lib/floor-data"
 import { api } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 import { Search, Inbox } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -132,10 +133,12 @@ export default function TowerAtlasPage() {
               ) : (
                 <>
                   {isAuthenticated && hasMember && (
-                    <Button variant="ghost" size="sm" className="text-sm" onClick={() => router.push("/inbox")}>
-                      <Inbox className="size-4 mr-1.5" />
-                      Inbox
-                    </Button>
+                    <Link href="/inbox">
+                      <Button variant="ghost" size="sm" className="text-sm">
+                        <Inbox className="size-4 mr-1.5" />
+                        Inbox
+                      </Button>
+                    </Link>
                   )}
                   {isAuthenticated && hasMember ? (
                     <Button size="sm" className="text-sm" onClick={handleEditProfile}>

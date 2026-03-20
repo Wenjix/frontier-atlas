@@ -172,7 +172,7 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialDa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0" showCloseButton={false}>
         <DialogTitle className="sr-only">Profile Setup</DialogTitle>
         <DialogDescription className="sr-only">
           Set up your profile to help floor leads make better introductions and help the right people find you.
