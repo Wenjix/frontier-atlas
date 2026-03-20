@@ -43,6 +43,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 data: { email, emailVerified: new Date() },
               })
             }
+            // Dev only: auto-create member + profile + floor membership
+            let member = await prisma.member.findUnique({ where: { userId: user.id } })
+            if (!member) {
+              member = await prisma.member.create({
+                data: {
+                  userId: user.id,
+                  fullName: email.split("@")[0],
+                  profile: {
+                    create: {
+                      homeFloorId: "floor-1",
+                      status: "DRAFT",
+                      visibility: "TOWER",
+                      introOpenness: "VERY_OPEN",
+                    },
+                  },
+                  memberships: {
+                    create: { floorId: "floor-1", role: "MEMBER", status: "ACTIVE" },
+                  },
+                },
+              })
+            }
+
             return { id: user.id, email: user.email, name: user.name }
           },
         }),
