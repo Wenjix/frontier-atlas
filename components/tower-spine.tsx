@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { floors, type FloorDefinition, type FloorType } from "@/lib/floor-data"
-import { Search } from "lucide-react"
+import { Search, BookOpen } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 
@@ -177,10 +177,19 @@ export function TowerSpine({
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border/40">
+      <div className="p-4 border-t border-sidebar-border/40 space-y-1.5">
         <p className="text-xs text-sidebar-foreground/50">
           {floors.length} floors · Navigate the building
         </p>
+        <a
+          href="https://ft0.sh/wiki"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors flex items-center gap-1.5"
+        >
+          <BookOpen className="size-3" />
+          Community Wiki
+        </a>
       </div>
     </aside>
   )

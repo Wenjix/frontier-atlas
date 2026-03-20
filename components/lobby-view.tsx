@@ -6,7 +6,7 @@ import { api } from "@/lib/api-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Calendar, Compass } from "lucide-react"
+import { Calendar, Compass, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ActivitySummary {
@@ -225,6 +225,15 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
                 </li>
               </ol>
               <Button size="sm" onClick={onStartProfile}>Start your profile</Button>
+              <a
+                href="https://ft0.sh/wiki"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+              >
+                <BookOpen className="size-3.5" />
+                Browse the community wiki
+              </a>
             </CardContent>
           </Card>
 
