@@ -359,7 +359,7 @@ export default function InboxPage() {
         open={activeModal === "accept"}
         onOpenChange={(open) => !open && setActiveModal(null)}
         person={activeRequestPerson ?? { id: "", name: "", avatar: "", intro: "" }}
-        onSend={(method, note) => handleRespond("ACCEPTED", { responseNote: note })}
+        onSend={(method, note) => handleRespond("ACCEPTED", { responseNote: note ? `[${method}] ${note}` : `[${method}]` })}
       />
 
       <NotNowModal

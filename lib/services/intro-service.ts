@@ -75,7 +75,7 @@ export async function createIntroRequest(requesterMemberId: string, data: Create
     },
   })
   if (recentCount >= 5) {
-    throw new AppError("RATE_LIMITED", "You can send at most 5 intro requests per 24 hours")
+    throw new AppError("RATE_LIMITED", "You've sent 5 intro requests in the last 24 hours — the maximum. Try again tomorrow.")
   }
 
   // 7. Cooldown: if previously NOT_NOW or PASSED, 30-day cooldown

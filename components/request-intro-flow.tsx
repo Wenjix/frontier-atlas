@@ -266,22 +266,33 @@ export function RequestIntroSheet({ open, onOpenChange, person, floorId, onSend 
   const [link, setLink] = useState("")
   const [sending, setSending] = useState(false)
   const [sharedContext, setSharedContext] = useState<SharedContext | null>(null)
+  const [pendingExists, setPendingExists] = useState(false)
 
   const isMessageTooShort = message.length > 0 && message.length < 50
   const isValid = reason && message.length >= 50 && connectionMode
 
-  // Fetch shared context when sheet opens
+  // Fetch shared context and check for existing pending request when sheet opens
   useEffect(() => {
     if (open && person.id) {
       api
         .get<SharedContext>(`/api/members/${person.id}/shared-context`)
         .then((ctx) => setSharedContext(ctx))
-        .catch(() => {
-          // Silently fail — shared context is optional
+        .catch(() => {})
+
+      // Check for existing pending request
+      api
+        .get<{ items: Array<{ recipientMemberId?: string; recipient?: { id: string }; status: string }> }>("/api/me/intro-requests/sent")
+        .then((res) => {
+          const hasPending = res.items.some(
+            (r) => (r.recipient?.id === person.id) && r.status === "PENDING"
+          )
+          setPendingExists(hasPending)
         })
+        .catch(() => {})
     }
     if (!open) {
       setSharedContext(null)
+      setPendingExists(false)
     }
   }, [open, person.id])
 
@@ -356,6 +367,16 @@ export function RequestIntroSheet({ open, onOpenChange, person, floorId, onSend 
                   </div>
                 </div>
               </div>
+
+              {/* Pending request warning */}
+              {pendingExists && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
+                  <p className="text-sm text-foreground font-medium">You already have a pending request</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You've already sent {person.name.split(" ")[0]} an intro request that hasn't been responded to yet. Check your inbox for updates.
+                  </p>
+                </div>
+              )}
 
               {/* Shared Ground Card (Opportunity 1) */}
               {sharedContext && (
@@ -473,7 +494,7 @@ export function RequestIntroSheet({ open, onOpenChange, person, floorId, onSend 
             {/* Footer */}
             <div className="p-6 pt-4 border-t border-border/50 flex items-center justify-end gap-3">
               <Button variant="ghost" onClick={handleClose}>Cancel</Button>
-              <Button onClick={() => setStep("review")} disabled={!isValid}>
+              <Button onClick={() => setStep("review")} disabled={!isValid || pendingExists}>
                 Review request
               </Button>
             </div>
@@ -959,18 +980,17 @@ interface ResponseCardProps {
 // Opportunity 2: Celebratory Acceptance
 export function AcceptedResponseCard({ request, onDone, onViewProfile }: ResponseCardProps) {
   const methodLabels: Record<string, string> = {
-    email: "Share email",
-    chat: "Open chat here",
-    time: "Suggest a time",
-    event: "Meet at an event",
+    email: "They'd like to connect via email",
+    chat: "They'd like to chat here",
+    time: "They'd like to schedule a time",
+    event: "They'd like to meet at an event",
   }
 
-  const methodCTAs: Record<string, string> = {
-    email: "Send your first message",
-    chat: "Start the conversation",
-    time: "Schedule a time",
-    event: "See event details",
-  }
+  // Parse method from note prefix: "[email] Happy to connect" → method="email", note="Happy to connect"
+  const rawNote = request.response?.note ?? ""
+  const methodMatch = rawNote.match(/^\[(\w+)\]\s*(.*)$/)
+  const method = methodMatch?.[1] ?? null
+  const cleanNote = methodMatch ? methodMatch[2] : rawNote
 
   return (
     <div className="bg-card border border-accent/20 rounded-2xl overflow-hidden">
@@ -988,32 +1008,25 @@ export function AcceptedResponseCard({ request, onDone, onViewProfile }: Respons
       </div>
 
       <div className="p-5 space-y-4">
-        {request.response?.method && (
+        {method && methodLabels[method] && (
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Next step</p>
-            <p className="text-sm text-foreground">{methodLabels[request.response.method]}</p>
+            <p className="text-sm text-foreground">{methodLabels[method]}</p>
           </div>
         )}
 
-        {request.response?.note && (
+        {cleanNote && (
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Their note</p>
             <div className="bg-muted/30 rounded-xl p-3">
-              <p className="text-sm text-foreground">{request.response.note}</p>
+              <p className="text-sm text-foreground">{cleanNote}</p>
             </div>
           </div>
         )}
 
         <div className="flex items-center gap-3 pt-2">
-          {request.response?.method && (
-            <Button className="flex-1 gap-1.5">
-              <ArrowRight className="size-3.5" />
-              {methodCTAs[request.response.method] ?? "Connect now"}
-            </Button>
-          )}
           <Button
-            variant="outline"
-            size="sm"
+            className="flex-1"
             onClick={() => onViewProfile?.(request.to.id)}
           >
             See their full profile

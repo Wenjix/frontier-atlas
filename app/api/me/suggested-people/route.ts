@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         profile: {
           status: "PUBLISHED",
           visibility: { in: ["FLOOR", "TOWER"] },
+          introOpenness: { not: "LOW_PROFILE" },
           ...(currentTopics.length > 0
             ? { topics: { some: { topic: { in: currentTopics } } } }
             : {}),
