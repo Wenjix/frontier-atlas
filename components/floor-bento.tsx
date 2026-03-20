@@ -213,26 +213,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
               <p className="text-muted-foreground leading-relaxed mb-4 text-[15px]">
                 {floor.description}
               </p>
-              
-              {/* Tags - smaller, max 3 */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {floor.tags.slice(0, 3).map((tag, i) => (
-                  <Badge 
-                    key={i} 
-                    variant="secondary" 
-                    className="text-[11px] font-normal bg-secondary/40 text-secondary-foreground px-2 py-0.5"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-              
-              {/* Best For */}
-              <p className="text-sm text-foreground">
-                <span className="text-muted-foreground">Best for: </span>
-                {floor.bestFor}
-              </p>
-              
+
               {/* Steward note */}
               {floor.character && (
                 <p className="text-sm text-muted-foreground/70 mt-2 italic">
