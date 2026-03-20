@@ -93,6 +93,7 @@ export default function TowerAtlasPage() {
           <TowerSpine
             selectedFloor={selectedFloorId}
             onSelectFloor={handleSelectFloor}
+            onHome={() => setSelectedFloorId(null)}
             filter={filter}
             onFilterChange={setFilter}
             floorMemberCounts={floorMemberCounts}
@@ -105,7 +106,9 @@ export default function TowerAtlasPage() {
           <header className="h-14 shrink-0 border-b border-border/50 flex items-center justify-between px-6 bg-background">
             {/* Left - Wordmark (subtle) */}
             <div className="w-32">
-              <span className="text-sm font-serif text-muted-foreground">Frontier Atlas</span>
+              <button onClick={() => setSelectedFloorId(null)} className="text-sm font-serif text-muted-foreground hover:text-foreground transition-colors">
+                Frontier Atlas
+              </button>
             </div>
             
             {/* Center - Global Search */}

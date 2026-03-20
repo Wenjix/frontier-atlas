@@ -27,7 +27,7 @@ export const floors: FloorDefinition[] = [
   {
     id: "floor-1",
     number: "1",
-    name: "Lobby",
+    name: "Welcome Desk",
     icon: "🏠",
     type: "commons",
     description: "Your starting point. Meet the community, find your way, begin your journey.",

@@ -2,13 +2,14 @@
 
 import { cn } from "@/lib/utils"
 import { floors, type FloorDefinition, type FloorType } from "@/lib/floor-data"
-import { Search, BookOpen } from "lucide-react"
+import { Search, BookOpen, Home } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 
 interface TowerSpineProps {
   selectedFloor: string | null
   onSelectFloor: (floorId: string) => void
+  onHome: () => void
   filter: "all" | FloorType
   onFilterChange: (filter: "all" | FloorType) => void
   floorMemberCounts?: Record<string, number>
@@ -90,6 +91,7 @@ function FloorSlice({
 export function TowerSpine({
   selectedFloor,
   onSelectFloor,
+  onHome,
   filter,
   onFilterChange,
   floorMemberCounts
@@ -114,8 +116,23 @@ export function TowerSpine({
 
   return (
     <aside className="h-full flex flex-col bg-sidebar text-sidebar-foreground">
+      {/* Home button */}
+      <button
+        onClick={onHome}
+        className={cn(
+          "w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-sidebar-border/30",
+          "hover:bg-sidebar-accent/40",
+          !selectedFloor
+            ? "bg-sidebar-accent/50 text-sidebar-foreground"
+            : "text-sidebar-foreground/70"
+        )}
+      >
+        <Home className="size-4 text-sidebar-primary" />
+        <span className="text-sm font-medium">Home</span>
+      </button>
+
       {/* Header with search */}
-      <div className="p-4 pb-3 border-b border-sidebar-border/30">
+      <div className="p-4 pb-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-sidebar-foreground/40" />
           <Input
