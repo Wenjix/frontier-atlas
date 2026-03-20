@@ -424,7 +424,6 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
                 size="sm" 
                 className="gap-1.5 justify-center"
                 onClick={() => {
-                  // Default to first person to know for the "Request intro" button
                   const firstPerson = displayPeople[0]
                   if (firstPerson) {
                     handleRequestIntro({
@@ -435,6 +434,8 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
                       floor: `Floor ${floor.number}`,
                       openToIntros: true,
                     })
+                  } else {
+                    router.push(`/floors/${floor.id}/people`)
                   }
                 }}
               >
