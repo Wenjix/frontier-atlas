@@ -98,7 +98,7 @@ export default function TelegramFloorPage({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           {floor.icon && <span className="text-2xl">{floor.icon}</span>}
-          <h1 className="text-2xl font-bold">Floor {floor.number}: {floor.name}</h1>
+          <h1 className="text-2xl font-serif">Floor {floor.number}: {floor.name}</h1>
         </div>
         {floor.shortDescription && (
           <p className="text-muted-foreground">{floor.shortDescription}</p>

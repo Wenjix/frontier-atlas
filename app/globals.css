@@ -171,18 +171,7 @@
 /* Celebration animation for accepted intros */
 @keyframes celebratePulse {
   0% { transform: scale(0.8); opacity: 0; }
-  50% { transform: scale(1.05); }
   100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes confettiFloat {
-  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(-60px) rotate(180deg); opacity: 0; }
-}
-
-@keyframes gentleGlow {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.55 0.08 160 / 0.2); }
-  50% { box-shadow: 0 0 20px 4px oklch(0.55 0.08 160 / 0.15); }
 }
 
 @keyframes warmSlideUp {
@@ -191,19 +180,26 @@
 }
 
 .animate-celebrate-pulse {
-  animation: celebratePulse 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.animate-confetti-float {
-  animation: confettiFloat 1.5s ease-out forwards;
-}
-
-.animate-gentle-glow {
-  animation: gentleGlow 2s ease-in-out infinite;
+  animation: celebratePulse 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-warm-slide-up {
   animation: warmSlideUp 0.5s ease-out forwards;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-slide-in,
+  .animate-fade-in,
+  .animate-celebrate-pulse,
+  .animate-warm-slide-up {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .animate-ping {
+    animation: none !important;
+  }
 }
 
 /* Smooth scrollbar styling */

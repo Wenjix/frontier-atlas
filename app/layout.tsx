@@ -15,7 +15,6 @@ const _instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   title: 'Frontier Atlas — Navigate Your Building',
   description: 'A spatial interface for navigating communities and floors',
-  generator: 'v0.app',
   icons: {
     icon: [
       {

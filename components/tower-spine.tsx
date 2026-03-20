@@ -121,6 +121,7 @@ export function TowerSpine({
           <Input
             type="text"
             placeholder="Search floors..."
+            aria-label="Search floors"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-9 bg-sidebar-accent/40 border-sidebar-border/40 text-sidebar-foreground placeholder:text-sidebar-foreground/35 text-sm rounded-lg"

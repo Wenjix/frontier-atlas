@@ -55,7 +55,7 @@ interface InvitationListResponse {
 export default function AdminInvitationsPage() {
   return (
     <div className="space-y-10">
-      <h1 className="text-2xl font-bold">Invitations</h1>
+      <h1 className="text-2xl font-serif">Invitations</h1>
       <CreateInvitationsSection />
       <hr />
       <InvitationHistorySection />

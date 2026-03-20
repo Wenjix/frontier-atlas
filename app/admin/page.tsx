@@ -65,7 +65,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <h1 className="text-2xl font-serif">Dashboard</h1>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

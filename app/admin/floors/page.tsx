@@ -49,7 +49,7 @@ export default function AdminFloorsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Floors</h1>
+      <h1 className="text-2xl font-serif">Floors</h1>
 
       <div className="rounded-md border">
         <table className="w-full text-sm">

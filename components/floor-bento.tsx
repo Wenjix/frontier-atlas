@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { type FloorDefinition, type FloorType } from "@/lib/floor-data"
-import { api, ApiError } from "@/lib/api-client"
+import { api } from "@/lib/api-client"
 import { introReasonMap, connectionMap } from "@/lib/enum-maps"
 import { toast } from "sonner"
 import {

@@ -77,7 +77,7 @@ export default function TowerAtlasPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile Navigation */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 p-3 bg-background/80 backdrop-blur-sm border-b border-border">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 p-3 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur-sm border-b border-border">
         <MobileNav
           selectedFloor={selectedFloor ?? null}
           onSelectFloor={handleSelectFloor}
@@ -116,6 +116,7 @@ export default function TowerAtlasPage() {
                   type="text"
                   placeholder="Search coming soon..."
                   disabled
+                  aria-label="Global search (coming soon)"
                   className="pl-9 h-9 bg-muted/30 border-border/50 text-sm placeholder:text-muted-foreground/50"
                 />
               </div>

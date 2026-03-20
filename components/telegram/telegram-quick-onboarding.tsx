@@ -102,7 +102,7 @@ export function TelegramQuickOnboarding({ floorId }: TelegramQuickOnboardingProp
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2">
               <Check className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold">You&apos;re live!</h1>
+            <h1 className="text-2xl font-serif">You&apos;re live!</h1>
             <p className="text-muted-foreground">
               {stats
                 ? `${stats.memberCount} ${stats.memberCount === 1 ? "neighbor" : "neighbors"} on ${floorName}.`
@@ -149,7 +149,7 @@ export function TelegramQuickOnboarding({ floorId }: TelegramQuickOnboardingProp
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Set up your profile</h1>
+          <h1 className="text-2xl font-serif">Set up your profile</h1>
           <p className="text-sm text-muted-foreground">
             30 seconds. That&apos;s all it takes.
           </p>

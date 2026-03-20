@@ -99,7 +99,7 @@ export function TelegramSignInFlow() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-sm text-center space-y-4">
-          <h2 className="text-xl font-semibold">Account linked</h2>
+          <h2 className="text-xl font-serif">Account linked</h2>
           <p className="text-sm text-muted-foreground">
             You&apos;ll need an invitation to join a floor. Ask your floor lead or check your email.
           </p>
@@ -112,7 +112,7 @@ export function TelegramSignInFlow() {
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2">Frontier Atlas</h1>
+          <h1 className="text-2xl font-serif mb-2">Frontier Atlas</h1>
           <p className="text-sm text-muted-foreground">
             Sign in with your email to connect your Atlas account.
           </p>

@@ -6,7 +6,7 @@ import { api } from "@/lib/api-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Calendar, Lightbulb, Compass } from "lucide-react"
+import { Calendar, Compass } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ActivitySummary {
@@ -104,13 +104,6 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
       }))
     : null
 
-  // Good places to start for Card G
-  const placesToStart = [
-    { floor: "Floor 15", text: "if you want open coworking", floorId: "floor-15" },
-    { floor: "Floor 9", text: "for technical builder energy", floorId: "floor-9" },
-    { floor: "Floor 16", text: "for casual collisions", floorId: "floor-16" },
-  ]
-
   const typeColors = {
     thematic: "border-l-floor-thematic",
     commons: "border-l-floor-commons",
@@ -123,32 +116,27 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
         {/* Bento Grid Layout per spec */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
           
-          {/* Card A: Welcome to the Tower (8 cols) */}
-          <Card className="md:col-span-8 border-0 bg-transparent shadow-none">
-            <CardContent className="p-0">
-              <h1 className="text-3xl lg:text-4xl font-serif tracking-tight text-foreground mb-3 text-balance">
-                Welcome to the Tower
-              </h1>
-              <p className="text-lg text-muted-foreground leading-relaxed mb-2">
-                A living community of builders, thinkers, and makers across 16 floors.
+          {/* Welcome header (8 cols) — no card wrapper needed */}
+          <div className="md:col-span-8">
+            <h1 className="text-3xl lg:text-4xl font-serif tracking-tight text-foreground mb-3 text-balance">
+              Welcome to the Tower
+            </h1>
+            <p className="text-lg text-muted-foreground leading-relaxed mb-2">
+              A living community of builders, thinkers, and makers across 16 floors.
+            </p>
+            {activitySummary ? (
+              <p className="text-sm text-muted-foreground/70">
+                {activitySummary.totalActiveMembers} people active across {activitySummary.activeFloorCount} floors
+                {activitySummary.upcomingEventCount > 0 && (
+                  <> &middot; {activitySummary.upcomingEventCount} upcoming {activitySummary.upcomingEventCount === 1 ? "event" : "events"}</>
+                )}
               </p>
-              <p className="text-muted-foreground leading-relaxed mb-3">
-                Explore floors, find what{"'"}s active, and make yourself visible across the building.
+            ) : (
+              <p className="text-sm text-muted-foreground/70">
+                Thematic floors, commons spaces, and private offices
               </p>
-              {activitySummary ? (
-                <p className="text-sm text-muted-foreground/70">
-                  {activitySummary.totalActiveMembers} people active across {activitySummary.activeFloorCount} floors
-                  {activitySummary.upcomingEventCount > 0 && (
-                    <> &middot; {activitySummary.upcomingEventCount} upcoming {activitySummary.upcomingEventCount === 1 ? "event" : "events"}</>
-                  )}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground/70">
-                  Thematic floors, commons spaces, and private offices
-                </p>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </div>
 
           {/* Card B: Tonight / Today (4 cols) */}
           <Card className="md:col-span-4 bg-card">
@@ -195,8 +183,8 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
                     key={floor.id}
                     onClick={() => onSelectFloor(floor.id)}
                     className={cn(
-                      "w-full text-left p-3 rounded-lg border transition-all",
-                      "hover:shadow-md hover:-translate-y-0.5 border-l-4",
+                      "w-full text-left p-3 rounded-lg border transition-colors",
+                      "hover:bg-muted/40 border-l-4",
                       typeColors[floor.type]
                     )}
                   >
@@ -215,59 +203,33 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
             </CardContent>
           </Card>
 
-          {/* Card D: Start Your Profile (5 cols) */}
+          {/* Get Started (5 cols) — profile CTA + quick orientation */}
           <Card className="md:col-span-5 bg-primary/[0.04] border-primary/10">
             <CardContent className="p-5">
-              <h2 className="text-lg font-serif text-foreground mb-2">Start Your Profile</h2>
+              <h2 className="text-lg font-serif text-foreground mb-2">Get Started</h2>
               <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                 Tell the tower who you are, what you{"'"}re building, and what you need.
               </p>
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                <span className="text-xs px-2 py-1 bg-secondary/60 rounded-full text-secondary-foreground">
-                  what you{"'"}re building
-                </span>
-                <span className="text-xs px-2 py-1 bg-secondary/60 rounded-full text-secondary-foreground">
-                  what you can help with
-                </span>
-                <span className="text-xs px-2 py-1 bg-secondary/60 rounded-full text-secondary-foreground">
-                  who you want to meet
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button size="sm" onClick={onStartProfile}>Get started</Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Card E: New Here? (4 cols) */}
-          <Card className="md:col-span-4 bg-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Lightbulb className="size-4 text-primary" />
-                <h2 className="text-sm font-medium text-foreground">New Here?</h2>
-              </div>
-              <ol className="space-y-2.5 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="size-5 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
-                  <span>Find your home floor</span>
+              <ol className="space-y-2 text-sm text-muted-foreground mb-5">
+                <li className="flex items-center gap-2">
+                  <span className="size-5 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center shrink-0">1</span>
+                  Find your home floor
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="size-5 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
-                  <span>Add what you{"'"}re building</span>
+                <li className="flex items-center gap-2">
+                  <span className="size-5 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center shrink-0">2</span>
+                  Set up your profile
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="size-5 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
-                  <span>Get people to meet</span>
+                <li className="flex items-center gap-2">
+                  <span className="size-5 rounded-full bg-secondary text-secondary-foreground text-xs flex items-center justify-center shrink-0">3</span>
+                  Get matched with people
                 </li>
               </ol>
-              <Button variant="outline" size="sm" className="mt-4 w-full" onClick={onStartProfile}>
-                Show me how
-              </Button>
+              <Button size="sm" onClick={onStartProfile}>Start your profile</Button>
             </CardContent>
           </Card>
 
-          {/* Card F: People to Know (4 cols) */}
-          <Card className="md:col-span-4 bg-card">
+          {/* People to Know (7 cols) */}
+          <Card className="md:col-span-7 bg-card">
             <CardContent className="p-5">
               <h2 className="text-sm font-medium text-foreground mb-4">People to Know</h2>
               <div className="space-y-3">
@@ -292,27 +254,6 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
                 ) : (
                   <p className="text-sm text-muted-foreground animate-pulse">Loading suggestions...</p>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Card G: Good Places to Start (4 cols) */}
-          <Card className="md:col-span-4 bg-card">
-            <CardContent className="p-5">
-              <h2 className="text-sm font-medium text-foreground mb-4">Good Places to Start</h2>
-              <div className="space-y-2.5">
-                {placesToStart.map((place, i) => (
-                  <button
-                    key={i}
-                    onClick={() => onSelectFloor(place.floorId)}
-                    className="flex items-start gap-2 w-full text-left hover:bg-muted/50 p-1.5 -mx-1.5 rounded-md transition-colors group text-sm"
-                  >
-                    <span className="text-foreground font-medium group-hover:text-primary transition-colors">
-                      Start on {place.floor}
-                    </span>
-                    <span className="text-muted-foreground">{place.text}</span>
-                  </button>
-                ))}
               </div>
             </CardContent>
           </Card>

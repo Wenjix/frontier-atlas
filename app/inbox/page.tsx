@@ -13,13 +13,13 @@ import {
   AlternatePathResponseCard,
 } from "@/components/request-intro-flow"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ArrowLeft, Bell } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api-client"
 import { introStatusReverseMap, introReasonMap, connectionReverseMap } from "@/lib/enum-maps"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
 // API types
@@ -202,7 +202,112 @@ export default function InboxPage() {
     router.push("/")
   }
 
-  const displayRequests = tab === "received" ? receivedRequests : sentRequests
+  const renderRequestList = (requests: ReturnType<typeof toFrontendRequest>[], direction: Tab) => {
+    if (loading) {
+      return (
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-card border border-border/50 rounded-2xl p-5 space-y-4">
+              <Skeleton className="h-5 w-32" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="size-11 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+              </div>
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    if (requests.length === 0) {
+      return (
+        <div className="text-center py-16">
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            {direction === "received" ? "No requests yet" : "No sent requests"}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {direction === "received"
+              ? "When someone requests an intro with you, it'll show up here."
+              : "When you request an intro, it'll show up here."}
+          </p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        {requests.map((req) => {
+          if (direction === "received" && req.status === "pending") {
+            return (
+              <IntroRequestCard
+                key={req.id}
+                request={req}
+                onAccept={() => openModal(req.id, "accept", req.from)}
+                onNotNow={() => openModal(req.id, "not-now", req.from)}
+                onPass={() => openModal(req.id, "pass", req.from)}
+                onSuggestPath={() => openModal(req.id, "suggest-path", req.from)}
+              />
+            )
+          }
+
+          if (req.status === "accepted") {
+            return (
+              <AcceptedResponseCard
+                key={req.id}
+                request={req}
+                onViewProfile={(memberId) => router.push(`/members/${memberId}`)}
+              />
+            )
+          }
+          if (req.status === "not-now") {
+            return (
+              <NotNowResponseCard
+                key={req.id}
+                request={req}
+                suggestions={suggestions}
+                onKeepExploring={handleKeepExploring}
+              />
+            )
+          }
+          if (req.status === "passed") {
+            return (
+              <PassedResponseCard
+                key={req.id}
+                request={req}
+                suggestions={suggestions}
+                onKeepExploring={handleKeepExploring}
+              />
+            )
+          }
+          if (req.status === "alternate-path") {
+            return <AlternatePathResponseCard key={req.id} request={req} />
+          }
+
+          // Pending sent requests — show as a simple card
+          return (
+            <div key={req.id} className="bg-card border border-border/50 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                  {req.to.avatar}
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">{req.to.name}</p>
+                  <p className="text-sm text-muted-foreground">{req.to.intro}</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Status: {req.status.replace("-", " ")}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -220,140 +325,34 @@ export default function InboxPage() {
               <p className="text-sm text-muted-foreground">Intro requests and notifications</p>
             </div>
           </div>
-          <div className="relative">
+          <button
+            aria-label={notificationCount > 0 ? `${notificationCount} unread notifications` : "Notifications"}
+            className="relative p-1.5 rounded-md hover:bg-muted transition-colors"
+          >
             <Bell className="size-5 text-muted-foreground" />
             {notificationCount > 0 && (
-              <span className="absolute -top-1 -right-1 size-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 size-5 rounded-full bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center">
                 {notificationCount}
               </span>
             )}
-          </div>
+          </button>
         </div>
       </header>
 
-      {/* Tabs */}
-      <div className="max-w-2xl mx-auto px-6 pt-6">
-        <div className="flex gap-1 bg-muted/30 rounded-lg p-1 w-fit">
-          <button
-            onClick={() => setTab("received")}
-            className={cn(
-              "px-4 py-1.5 text-sm rounded-md transition-colors",
-              tab === "received" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Received
-          </button>
-          <button
-            onClick={() => setTab("sent")}
-            className={cn(
-              "px-4 py-1.5 text-sm rounded-md transition-colors",
-              tab === "sent" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Sent
-          </button>
-        </div>
-      </div>
+      {/* Tabs + Content */}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="max-w-2xl mx-auto px-6 pt-6">
+        <TabsList className="bg-muted/30 w-fit">
+          <TabsTrigger value="received">Received</TabsTrigger>
+          <TabsTrigger value="sent">Sent</TabsTrigger>
+        </TabsList>
 
-      {/* Content */}
-      <main className="max-w-2xl mx-auto px-6 py-6">
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-card border border-border/50 rounded-2xl p-5 space-y-4">
-                <Skeleton className="h-5 w-32" />
-                <div className="flex items-center gap-3">
-                  <Skeleton className="size-11 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-28" />
-                    <Skeleton className="h-3 w-40" />
-                  </div>
-                </div>
-                <Skeleton className="h-16 w-full" />
-              </div>
-            ))}
-          </div>
-        ) : displayRequests.length === 0 ? (
-          <div className="text-center py-16">
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              {tab === "received" ? "No requests yet" : "No sent requests"}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {tab === "received"
-                ? "When someone requests an intro with you, it'll show up here."
-                : "When you request an intro, it'll show up here."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {displayRequests.map((req) => {
-              if (tab === "received" && req.status === "pending") {
-                return (
-                  <IntroRequestCard
-                    key={req.id}
-                    request={req}
-                    onAccept={() => openModal(req.id, "accept", req.from)}
-                    onNotNow={() => openModal(req.id, "not-now", req.from)}
-                    onPass={() => openModal(req.id, "pass", req.from)}
-                    onSuggestPath={() => openModal(req.id, "suggest-path", req.from)}
-                  />
-                )
-              }
-
-              if (req.status === "accepted") {
-                return (
-                  <AcceptedResponseCard
-                    key={req.id}
-                    request={req}
-                    onViewProfile={(memberId) => router.push(`/members/${memberId}`)}
-                  />
-                )
-              }
-              if (req.status === "not-now") {
-                return (
-                  <NotNowResponseCard
-                    key={req.id}
-                    request={req}
-                    suggestions={suggestions}
-                    onKeepExploring={handleKeepExploring}
-                  />
-                )
-              }
-              if (req.status === "passed") {
-                return (
-                  <PassedResponseCard
-                    key={req.id}
-                    request={req}
-                    suggestions={suggestions}
-                    onKeepExploring={handleKeepExploring}
-                  />
-                )
-              }
-              if (req.status === "alternate-path") {
-                return <AlternatePathResponseCard key={req.id} request={req} />
-              }
-
-              // Pending sent requests — show as a simple card
-              return (
-                <div key={req.id} className="bg-card border border-border/50 rounded-2xl p-5 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                      {req.to.avatar}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{req.to.name}</p>
-                      <p className="text-sm text-muted-foreground">{req.to.intro}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Status: {req.status.replace("-", " ")}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </main>
+        <TabsContent value="received" className="py-6">
+          {renderRequestList(receivedRequests, "received")}
+        </TabsContent>
+        <TabsContent value="sent" className="py-6">
+          {renderRequestList(sentRequests, "sent")}
+        </TabsContent>
+      </Tabs>
 
       {/* Modals */}
       <AcceptIntroModal

@@ -290,11 +290,11 @@ export function TelegramOnboardingFlow({ floorId }: TelegramOnboardingFlowProps)
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-sm text-center space-y-6">
-          <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-            <Check className="size-6 text-green-600" />
+          <div className="mx-auto size-12 rounded-full bg-accent/15 flex items-center justify-center">
+            <Check className="size-6 text-accent" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold mb-2">You&apos;re live</h2>
+            <h2 className="text-xl font-serif mb-2">You&apos;re live</h2>
             <p className="text-sm text-muted-foreground">
               Your profile is now visible to your floor. Time to explore.
             </p>

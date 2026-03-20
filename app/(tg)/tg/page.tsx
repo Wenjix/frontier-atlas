@@ -114,7 +114,7 @@ export default function TelegramEntryPage() {
     return (
       <div className="flex items-center justify-center min-h-screen p-6">
         <div className="text-center space-y-4 max-w-sm">
-          <h1 className="text-2xl font-bold">Welcome back</h1>
+          <h1 className="text-2xl font-serif">Welcome back</h1>
           <p className="text-muted-foreground">You&apos;re all set up in Atlas.</p>
           <div className="flex flex-col gap-2 pt-2">
             <Button onClick={() => router.push(`/tg/floors/${floorId}/people`)}>

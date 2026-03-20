@@ -11,6 +11,14 @@ import {
   SheetTitle,
   SheetDescription
 } from "@/components/ui/sheet"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -30,7 +38,6 @@ import {
   Check,
   Clock,
   Mail,
-  Video,
   ExternalLink,
   Heart,
   Handshake,
@@ -410,7 +417,7 @@ export function RequestIntroSheet({ open, onOpenChange, person, floorId, onSend 
                   className="min-h-[140px] resize-none"
                 />
                 {isMessageTooShort && (
-                  <p className="text-xs text-amber-600">
+                  <p className="text-xs text-destructive">
                     Try adding one sentence about why you'd like to connect with {person.name.split(" ")[0]} specifically.
                   </p>
                 )}
@@ -569,7 +576,7 @@ export function RequestIntroSheet({ open, onOpenChange, person, floorId, onSend 
                 <div className="bg-muted/30 rounded-xl p-4 text-left">
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Status</p>
                   <p className="text-foreground flex items-center gap-2">
-                    <Clock className="size-4 text-amber-500" />
+                    <Clock className="size-4 text-primary" />
                     Pending — {person.name.split(" ")[0]} will see your request soon
                   </p>
                 </div>
@@ -718,18 +725,15 @@ export function AcceptIntroModal({ open, onOpenChange, person, onSend }: AcceptI
     onOpenChange(false)
   }
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="p-6 space-y-5">
-          <div>
-            <h2 className="text-lg font-serif text-foreground">Choose how to connect</h2>
-            <p className="text-sm text-muted-foreground mt-1">Pick the easiest next step.</p>
-          </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle className="font-serif">Choose how to connect</DialogTitle>
+          <DialogDescription>Pick the easiest next step.</DialogDescription>
+        </DialogHeader>
 
+        <div className="space-y-5">
           <RadioGroup value={method} onValueChange={setMethod} className="space-y-2">
             {ACCEPT_METHODS.map((m) => {
               const Icon = m.icon
@@ -756,12 +760,12 @@ export function AcceptIntroModal({ open, onOpenChange, person, onSend }: AcceptI
           </div>
         </div>
 
-        <div className="p-6 pt-0 flex items-center justify-end gap-3">
+        <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Back</Button>
           <Button onClick={handleSend}>Send acceptance</Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -784,18 +788,15 @@ export function NotNowModal({ open, onOpenChange, onSend }: NotNowModalProps) {
     onOpenChange(false)
   }
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="p-6 space-y-5">
-          <div>
-            <h2 className="text-lg font-serif text-foreground">Not available right now</h2>
-            <p className="text-sm text-muted-foreground mt-1">Optional: let them know why.</p>
-          </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle className="font-serif">Not available right now</DialogTitle>
+          <DialogDescription>Optional: let them know why.</DialogDescription>
+        </DialogHeader>
 
+        <div className="space-y-5">
           <RadioGroup value={reason} onValueChange={setReason} className="space-y-2">
             {NOT_NOW_REASONS.map((r) => (
               <div key={r} className="flex items-center space-x-3">
@@ -817,12 +818,12 @@ export function NotNowModal({ open, onOpenChange, onSend }: NotNowModalProps) {
           </div>
         </div>
 
-        <div className="p-6 pt-0 flex items-center justify-end gap-3">
+        <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSend}>Send</Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -844,35 +845,30 @@ export function PassModal({ open, onOpenChange, onPass }: PassModalProps) {
     onOpenChange(false)
   }
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="p-6 space-y-5">
-          <div>
-            <h2 className="text-lg font-serif text-foreground">Pass on this intro request?</h2>
-            <p className="text-sm text-muted-foreground mt-1">They'll be notified that this wasn't a fit.</p>
-          </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle className="font-serif">Pass on this intro request?</DialogTitle>
+          <DialogDescription>They'll be notified that this wasn't a fit.</DialogDescription>
+        </DialogHeader>
 
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Optional note</Label>
-            <Textarea
-              placeholder="Appreciate the thoughtful note, but this isn't the best fit for me right now."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="min-h-[80px] resize-none"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label className="text-sm text-muted-foreground">Optional note</Label>
+          <Textarea
+            placeholder="Appreciate the thoughtful note, but this isn't the best fit for me right now."
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="min-h-[80px] resize-none"
+          />
         </div>
 
-        <div className="p-6 pt-0 flex items-center justify-end gap-3">
+        <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button variant="destructive" onClick={handlePass}>Pass</Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -897,18 +893,15 @@ export function SuggestPathModal({ open, onOpenChange, onSend }: SuggestPathModa
     onOpenChange(false)
   }
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="p-6 space-y-5">
-          <div>
-            <h2 className="text-lg font-serif text-foreground">Suggest another way to connect</h2>
-            <p className="text-sm text-muted-foreground mt-1">Offer a lighter path if a direct intro isn't the best fit right now.</p>
-          </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle className="font-serif">Suggest another way to connect</DialogTitle>
+          <DialogDescription>Offer a lighter path if a direct intro isn't the best fit right now.</DialogDescription>
+        </DialogHeader>
 
+        <div className="space-y-5">
           <RadioGroup value={path} onValueChange={setPath} className="space-y-2">
             {ALTERNATE_PATHS.map((p) => (
               <div key={p} className="flex items-center space-x-3">
@@ -942,12 +935,12 @@ export function SuggestPathModal({ open, onOpenChange, onSend }: SuggestPathModa
           )}
         </div>
 
-        <div className="p-6 pt-0 flex items-center justify-end gap-3">
+        <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Back</Button>
           <Button onClick={handleSend} disabled={!path}>Send suggestion</Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -1188,25 +1181,4 @@ export function AlternatePathResponseCard({ request, onDone }: ResponseCardProps
   )
 }
 
-// ============================================
-// DEMO WRAPPER - Shows full flow
-// ============================================
 
-interface RequestIntroDemoProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  person: Person
-}
-
-export function RequestIntroDemo({ open, onOpenChange, person }: RequestIntroDemoProps) {
-  return (
-    <RequestIntroSheet
-      open={open}
-      onOpenChange={onOpenChange}
-      person={person}
-      onSend={(request) => {
-        console.log("Request sent:", request)
-      }}
-    />
-  )
-}
