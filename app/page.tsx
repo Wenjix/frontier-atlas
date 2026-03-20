@@ -38,6 +38,36 @@ export default function TowerAtlasPage() {
     })
   }, [isAuthenticated])
 
+  const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null)
+
+  const handleEditProfile = async () => {
+    if (hasMember) {
+      try {
+        const res = await api.get<{ profile: { oneLineIntro: string | null; websiteUrl: string | null; workingOn: string | null; curiousAbout: string | null; wantsToMeet: string | null; canHelpWith: string | null; needsHelpWith: string | null; conversationStarter: string | null; visibility: string; introOpenness: string; topics: string[] } | null; fullName: string }>("/api/me/profile")
+        if (res.profile) {
+          const { visibilityReverseMap, opennessReverseMap } = await import("@/lib/enum-maps")
+          setProfileData({
+            fullName: res.fullName || "",
+            oneLineIntro: res.profile.oneLineIntro || "",
+            website: res.profile.websiteUrl || "",
+            workingOn: res.profile.workingOn || "",
+            curiousAbout: res.profile.curiousAbout || "",
+            topics: res.profile.topics || [],
+            whoToMeet: res.profile.wantsToMeet || "",
+            helpOthers: res.profile.canHelpWith || "",
+            needHelp: res.profile.needsHelpWith || "",
+            conversationStarter: res.profile.conversationStarter || "",
+            visibility: (visibilityReverseMap as Record<string, string>)[res.profile.visibility] || "floor",
+            openness: (opennessReverseMap as Record<string, string>)[res.profile.introOpenness] || "very",
+          })
+        }
+      } catch {
+        // Fall through to open with empty data
+      }
+    }
+    setOnboardingOpen(true)
+  }
+
   const selectedFloor = selectedFloorId ? getFloorById(selectedFloorId) : null
 
   const handleSelectFloor = (floorId: string) => {
@@ -82,9 +112,10 @@ export default function TowerAtlasPage() {
             <div className="flex-1 max-w-md mx-8">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
-                <Input 
+                <Input
                   type="text"
-                  placeholder="Search people, floors, asks, events"
+                  placeholder="Search coming soon..."
+                  disabled
                   className="pl-9 h-9 bg-muted/30 border-border/50 text-sm placeholder:text-muted-foreground/50"
                 />
               </div>
@@ -103,7 +134,7 @@ export default function TowerAtlasPage() {
                     </Button>
                   )}
                   {isAuthenticated && hasMember ? (
-                    <Button size="sm" className="text-sm" onClick={() => setOnboardingOpen(true)}>
+                    <Button size="sm" className="text-sm" onClick={handleEditProfile}>
                       Edit profile
                     </Button>
                   ) : isAuthenticated && !hasMember ? (
@@ -128,8 +159,8 @@ export default function TowerAtlasPage() {
 <FloorBento 
               key={selectedFloor.id}
               floor={selectedFloor}
-              onPersonClick={(id) => console.log("Person clicked:", id)}
-              onEventClick={(id) => console.log("Event clicked:", id)}
+              onPersonClick={() => {}}
+              onEventClick={() => {}}
               onBack={() => setSelectedFloorId(null)}
             />
             ) : (
@@ -142,11 +173,11 @@ export default function TowerAtlasPage() {
       {/* Mobile Layout */}
       <div className="lg:hidden pt-20 min-h-screen">
         {selectedFloor ? (
-          <FloorBento 
+          <FloorBento
             key={selectedFloor.id}
             floor={selectedFloor}
-            onPersonClick={(id) => console.log("Person clicked:", id)}
-            onEventClick={(id) => console.log("Event clicked:", id)}
+            onPersonClick={() => {}}
+            onEventClick={() => {}}
             onBack={() => setSelectedFloorId(null)}
           />
         ) : (
@@ -155,10 +186,14 @@ export default function TowerAtlasPage() {
       </div>
 
       {/* Onboarding Flow */}
-      <OnboardingFlow 
-        open={onboardingOpen} 
-        onOpenChange={setOnboardingOpen}
+      <OnboardingFlow
+        open={onboardingOpen}
+        onOpenChange={(open) => {
+          setOnboardingOpen(open)
+          if (!open) setProfileData(null)
+        }}
         floorName={selectedFloor?.name ?? "Frontier"}
+        initialData={profileData}
       />
     </div>
   )

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireMember } from "@/lib/auth-helpers"
+import { requireEitherMember } from "@/lib/telegram/dual-auth"
 import { formatApiError } from "@/lib/errors"
 import { paginationSchema } from "@/lib/validations/common"
 import { getSentRequests } from "@/lib/services/intro-service"
 
 export async function GET(request: NextRequest) {
   try {
-    const { memberId } = await requireMember()
+    const { memberId } = await requireEitherMember(request)
     const searchParams = request.nextUrl.searchParams
 
     const { page, pageSize } = paginationSchema.parse({

@@ -11,10 +11,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { ArrowLeft, ArrowRight, Upload, X, Check, Sparkles, Wand2, Users } from "lucide-react"
+import { ArrowLeft, ArrowRight, Upload, X, Check, Users } from "lucide-react"
 
 // Form data types
 interface OnboardingData {
@@ -31,8 +30,6 @@ interface OnboardingData {
   conversationStarter: string
   visibility: "floor" | "tower" | "leads"
   openness: "very" | "relevant" | "low"
-  notifications: string[]
-  anythingElse: string
 }
 
 interface SuggestedPerson {
@@ -47,30 +44,6 @@ const SUGGESTED_TOPICS = [
   "Makers", "Crypto", "Design", "Community", "Fundraising", "Hardware",
   "Events", "Human Flourishing"
 ]
-
-// Example responses for each field to help users
-const EXAMPLES: Record<string, string[]> = {
-  workingOn: [
-    "Building a visual control layer for AI-generated tools — focused on safe editing workflows and live previews.",
-    "Researching how small creative teams adopt AI tools — interviewing 30 studios this quarter.",
-  ],
-  curiousAbout: [
-    "How creative communities coordinate without becoming too rigid. Also: AI-native interfaces.",
-    "The intersection of biology and computation — especially protein engineering approaches.",
-  ],
-  whoToMeet: [
-    "Designers who've shipped AI-native products, and founders building developer tools.",
-    "People thinking about community infrastructure and social computing.",
-  ],
-  helpOthers: [
-    "Product strategy, agent system design, and turning vague ideas into clearer product directions.",
-    "Early-stage fundraising, pitch deck reviews, and intro to climate tech investors.",
-  ],
-  needHelp: [
-    "Finding early adopters, pricing strategy for B2B SaaS, and design system architecture.",
-    "Connecting with hardware prototyping labs and finding a technical co-founder.",
-  ],
-}
 
 // Building metaphor for progress
 const STEP_LABELS = [
@@ -93,9 +66,10 @@ interface OnboardingFlowProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   floorName?: string
+  initialData?: Partial<OnboardingData> | null
 }
 
-export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: OnboardingFlowProps) {
+export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialData }: OnboardingFlowProps) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<OnboardingData>({
     fullName: "",
@@ -111,8 +85,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
     conversationStarter: "",
     visibility: "floor",
     openness: "very",
-    notifications: [],
-    anythingElse: ""
   })
   const [customTopic, setCustomTopic] = useState("")
   const [publishing, setPublishing] = useState(false)
@@ -121,6 +93,13 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
   const updateData = useCallback((updates: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...updates }))
   }, [])
+
+  useEffect(() => {
+    if (open && initialData) {
+      setData(prev => ({ ...prev, ...initialData }))
+      setStep(1) // Skip the entry step, go straight to editing
+    }
+  }, [open, initialData])
 
   const toggleTopic = (topic: string) => {
     setData(prev => {
@@ -137,15 +116,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
       toggleTopic(customTopic.trim())
       setCustomTopic("")
     }
-  }
-
-  const toggleNotification = (value: string) => {
-    setData(prev => {
-      if (prev.notifications.includes(value)) {
-        return { ...prev, notifications: prev.notifications.filter(n => n !== value) }
-      }
-      return { ...prev, notifications: [...prev.notifications, value] }
-    })
   }
 
   const canContinue = () => {
@@ -195,19 +165,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
       toast.error(err instanceof Error ? err.message : "Failed to publish profile")
     } finally {
       setPublishing(false)
-    }
-  }
-
-  // Per-field AI assist (placeholder — would call an AI endpoint)
-  const handleAiAssist = (field: keyof typeof EXAMPLES) => {
-    const examples = EXAMPLES[field]
-    if (examples && examples.length > 0) {
-      const currentValue = data[field as keyof OnboardingData] as string
-      if (!currentValue) {
-        toast("Here's an example for inspiration", { description: examples[0] })
-      } else {
-        toast.success("Your response looks great! No changes needed.")
-      }
     }
   }
 
@@ -303,15 +260,10 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                           {data.fullName.split(" ").map(n => n[0]).join("").slice(0, 2) || "?"}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Upload className="size-4 mr-2" />
-                          Upload photo
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-muted-foreground">
-                          Skip for now
-                        </Button>
-                      </div>
+                      <Button variant="outline" size="sm" disabled title="Photo upload coming soon">
+                        <Upload className="size-4 mr-2" />
+                        Upload photo
+                      </Button>
                     </div>
                   </div>
 
@@ -364,25 +316,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                     rows={5}
                     className="text-[15px]"
                   />
-
-                  {/* Per-field AI assist */}
-                  <button
-                    onClick={() => handleAiAssist("workingOn")}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Wand2 className="size-3" />
-                    Help me say this better
-                  </button>
-
-                  {/* Example responses */}
-                  <div className="bg-muted/20 rounded-xl p-4 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Others on the floor wrote:</p>
-                    {EXAMPLES.workingOn.map((ex, i) => (
-                      <p key={i} className="text-xs text-muted-foreground/80 italic">
-                        &quot;{ex}&quot;
-                      </p>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -406,23 +339,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                     rows={4}
                     className="text-[15px]"
                   />
-
-                  <button
-                    onClick={() => handleAiAssist("curiousAbout")}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Wand2 className="size-3" />
-                    Help me say this better
-                  </button>
-
-                  <div className="bg-muted/20 rounded-xl p-4 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Others on the floor wrote:</p>
-                    {EXAMPLES.curiousAbout.map((ex, i) => (
-                      <p key={i} className="text-xs text-muted-foreground/80 italic">
-                        &quot;{ex}&quot;
-                      </p>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -508,23 +424,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                     rows={4}
                     className="text-[15px]"
                   />
-
-                  <button
-                    onClick={() => handleAiAssist("whoToMeet")}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Wand2 className="size-3" />
-                    Help me say this better
-                  </button>
-
-                  <div className="bg-muted/20 rounded-xl p-4 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Others on the floor wrote:</p>
-                    {EXAMPLES.whoToMeet.map((ex, i) => (
-                      <p key={i} className="text-xs text-muted-foreground/80 italic">
-                        &quot;{ex}&quot;
-                      </p>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -548,23 +447,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                     rows={4}
                     className="text-[15px]"
                   />
-
-                  <button
-                    onClick={() => handleAiAssist("helpOthers")}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Wand2 className="size-3" />
-                    Help me say this better
-                  </button>
-
-                  <div className="bg-muted/20 rounded-xl p-4 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Others on the floor wrote:</p>
-                    {EXAMPLES.helpOthers.map((ex, i) => (
-                      <p key={i} className="text-xs text-muted-foreground/80 italic">
-                        &quot;{ex}&quot;
-                      </p>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -588,23 +470,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                     rows={4}
                     className="text-[15px]"
                   />
-
-                  <button
-                    onClick={() => handleAiAssist("needHelp")}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Wand2 className="size-3" />
-                    Help me say this better
-                  </button>
-
-                  <div className="bg-muted/20 rounded-xl p-4 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Others on the floor wrote:</p>
-                    {EXAMPLES.needHelp.map((ex, i) => (
-                      <p key={i} className="text-xs text-muted-foreground/80 italic">
-                        &quot;{ex}&quot;
-                      </p>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -706,36 +571,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                       </label>
                     </RadioGroup>
                   </div>
-
-                  <div className="space-y-3">
-                    <Label>What would you like to hear about?</Label>
-                    <p className="text-xs text-muted-foreground">Choose any that sound useful.</p>
-                    <div className="space-y-2">
-                      {["Events", "Office hours", "Small group intros", "Workshops", "None for now"].map(item => (
-                        <label key={item} className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/30 transition-colors">
-                          <Checkbox
-                            checked={data.notifications.includes(item)}
-                            onCheckedChange={() => toggleNotification(item)}
-                          />
-                          <span className="text-sm">{item}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="anythingElse">
-                      Anything else you'd like people here to know?
-                      <span className="text-muted-foreground/60 font-normal ml-1">optional</span>
-                    </Label>
-                    <Textarea
-                      id="anythingElse"
-                      placeholder="Anything helpful, personal, or practical that doesn't fit above."
-                      value={data.anythingElse}
-                      onChange={(e) => updateData({ anythingElse: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
                 </div>
               </div>
             )}
@@ -758,25 +593,6 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                   >
                     <X className="size-5" />
                   </button>
-                </div>
-
-                {/* AI Rewrite Option */}
-                <div className="bg-muted/30 border border-border rounded-xl p-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Sparkles className="size-4 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium mb-1">Want help tightening this up?</p>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        We can turn your answers into a cleaner floor profile.
-                      </p>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Rewrite for me</Button>
-                        <Button variant="ghost" size="sm" className="text-muted-foreground">Keep my version</Button>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Preview Card */}
@@ -923,7 +739,7 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI" }: Onboard
                   See people to know
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleClose} className="text-muted-foreground">
-                  Go to floor page
+                  Done
                 </Button>
               </div>
             </div>

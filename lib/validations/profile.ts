@@ -25,3 +25,7 @@ export const profilePublishRequirements = z.object({
   visibility: z.enum(["FLOOR", "TOWER", "LEADS_ONLY"]),
   introOpenness: z.enum(["VERY_OPEN", "OPEN_IF_RELEVANT", "LOW_PROFILE"]),
 })
+
+export const profileQuickPublishRequirements = z.object({
+  oneLineIntro: z.string().min(1, "A one-line intro is required"),
+})

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { formatApiError } from "@/lib/errors"
 import { AppError } from "@/lib/errors"
+import { prisma } from "@/lib/prisma"
 import { validateTelegramInitData } from "@/lib/telegram/validate-init-data"
 import { createTelegramSession } from "@/lib/telegram/telegram-session"
 import { findOrCreateTelegramLink } from "@/lib/services/telegram-link-service"
@@ -53,6 +54,16 @@ export async function POST(request: NextRequest) {
     // Create session
     const { token, expiresAt } = await createTelegramSession(telegramLink.id)
 
+    // Look up profile status if member exists
+    let profileStatus: string | null = null
+    if (telegramLink.memberId) {
+      const profile = await prisma.memberProfile.findUnique({
+        where: { memberId: telegramLink.memberId },
+        select: { status: true },
+      })
+      profileStatus = profile?.status ?? null
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -63,6 +74,7 @@ export async function POST(request: NextRequest) {
           userId: telegramLink.userId,
           memberId: telegramLink.memberId,
           telegramJoinStatus: telegramLink.telegramJoinStatus,
+          profileStatus,
         },
         startParam: parsed.start_param ?? null,
       },

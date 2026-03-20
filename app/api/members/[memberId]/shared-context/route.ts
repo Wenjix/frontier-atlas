@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireMember } from "@/lib/auth-helpers"
+import { requireEitherMember } from "@/lib/telegram/dual-auth"
 import { formatApiError } from "@/lib/errors"
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ memberId: string }> }
 ) {
   try {
-    const { memberId: currentMemberId } = await requireMember()
+    const { memberId: currentMemberId } = await requireEitherMember(request)
     const { memberId: targetMemberId } = await params
 
     // Fetch both members' profiles and memberships in parallel

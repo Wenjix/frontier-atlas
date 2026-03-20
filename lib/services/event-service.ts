@@ -28,19 +28,6 @@ export async function getFloorEvents(
   return { items, total, page, pageSize }
 }
 
-export async function isHostingSoon(memberId: string, floorId?: string): Promise<boolean> {
-  const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  const event = await prisma.event.findFirst({
-    where: {
-      hostMemberId: memberId,
-      ...(floorId ? { floorId } : {}),
-      status: "SCHEDULED",
-      startsAt: { gte: new Date(), lte: sevenDaysFromNow },
-    },
-  })
-  return !!event
-}
-
 export async function getHostingSoonMemberIds(floorId: string): Promise<Set<string>> {
   const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   const events = await prisma.event.findMany({
@@ -51,5 +38,5 @@ export async function getHostingSoonMemberIds(floorId: string): Promise<Set<stri
     },
     select: { hostMemberId: true },
   })
-  return new Set(events.map((e) => e.hostMemberId))
+  return new Set(events.filter((e) => e.hostMemberId).map((e) => e.hostMemberId!))
 }

@@ -9,6 +9,7 @@ interface TelegramUser {
   userId: string | null
   memberId: string | null
   telegramJoinStatus: string
+  profileStatus: string | null
 }
 
 interface TelegramContextValue {
@@ -18,9 +19,11 @@ interface TelegramContextValue {
   startParam: string | null
   isLinked: boolean
   memberId: string | null
+  profileStatus: string | null
   isLoading: boolean
   error: string | null
   refreshUser: () => Promise<void>
+  updateUser: (updates: Partial<TelegramUser>) => void
 }
 
 const TelegramContext = createContext<TelegramContextValue>({
@@ -30,9 +33,11 @@ const TelegramContext = createContext<TelegramContextValue>({
   startParam: null,
   isLinked: false,
   memberId: null,
+  profileStatus: null,
   isLoading: true,
   error: null,
   refreshUser: async () => {},
+  updateUser: () => {},
 })
 
 export function useTelegram() {
@@ -46,6 +51,10 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const [startParam, setStartParam] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const updateUser = useCallback((updates: Partial<TelegramUser>) => {
+    setUser((prev) => prev ? { ...prev, ...updates } : null)
+  }, [])
 
   const refreshUser = useCallback(async () => {
     // Re-verify initData to get fresh user state
@@ -137,9 +146,11 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         startParam,
         isLinked: !!user?.userId,
         memberId: user?.memberId ?? null,
+        profileStatus: user?.profileStatus ?? null,
         isLoading,
         error,
         refreshUser,
+        updateUser,
       }}
     >
       {children}

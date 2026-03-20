@@ -3,15 +3,13 @@
 import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { useTelegram } from "@/lib/telegram/telegram-context"
-import { TelegramQuickOnboarding } from "@/components/telegram/telegram-quick-onboarding"
+import { TelegramOnboardingFlow } from "@/components/telegram/telegram-onboarding-flow"
 import { TelegramSignInFlow } from "@/components/telegram/telegram-sign-in-flow"
 import { Spinner } from "@/components/ui/spinner"
 
-const DEFAULT_FLOOR_ID = "floor-1"
-
-function OnboardingContent() {
+function FullOnboardingContent() {
   const searchParams = useSearchParams()
-  const floorId = searchParams.get("floor") ?? DEFAULT_FLOOR_ID
+  const floorId = searchParams.get("floor")
   const { isLoading, memberId } = useTelegram()
 
   if (isLoading) {
@@ -26,10 +24,10 @@ function OnboardingContent() {
     return <TelegramSignInFlow />
   }
 
-  return <TelegramQuickOnboarding floorId={floorId} />
+  return <TelegramOnboardingFlow floorId={floorId} />
 }
 
-export default function TelegramOnboardingPage() {
+export default function TelegramFullOnboardingPage() {
   return (
     <Suspense
       fallback={
@@ -38,7 +36,7 @@ export default function TelegramOnboardingPage() {
         </div>
       }
     >
-      <OnboardingContent />
+      <FullOnboardingContent />
     </Suspense>
   )
 }

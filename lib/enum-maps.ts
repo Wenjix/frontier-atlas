@@ -7,7 +7,7 @@ export const visibilityMap = {
 export const visibilityReverseMap = {
   FLOOR: "floor",
   TOWER: "tower",
-  LEADS_ONLY: "leads_only",
+  LEADS_ONLY: "leads",
 } as const
 
 export const opennessMap = {
@@ -17,9 +17,9 @@ export const opennessMap = {
 } as const
 
 export const opennessReverseMap = {
-  VERY_OPEN: "very_open",
-  OPEN_IF_RELEVANT: "open_if_relevant",
-  LOW_PROFILE: "low_profile",
+  VERY_OPEN: "very",
+  OPEN_IF_RELEVANT: "relevant",
+  LOW_PROFILE: "low",
 } as const
 
 export const introReasonMap = {

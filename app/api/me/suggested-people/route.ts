@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireMember } from "@/lib/auth-helpers"
+import { requireEitherMember } from "@/lib/telegram/dual-auth"
 import { formatApiError } from "@/lib/errors"
 
 export async function GET(request: NextRequest) {
   try {
-    const { memberId } = await requireMember()
+    const { memberId } = await requireEitherMember(request)
     const { searchParams } = new URL(request.url)
     const floorId = searchParams.get("floorId")
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "3"), 10)

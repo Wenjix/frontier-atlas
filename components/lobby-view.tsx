@@ -6,7 +6,7 @@ import { api } from "@/lib/api-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowRight, Calendar, Lightbulb, Compass } from "lucide-react"
+import { Calendar, Lightbulb, Compass } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ActivitySummary {
@@ -181,10 +181,6 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
                   </button>
                 ))}
               </div>
-              <Button variant="ghost" size="sm" className="mt-3 -ml-2 text-muted-foreground hover:text-foreground text-xs">
-                See all events
-                <ArrowRight className="size-3 ml-1" />
-              </Button>
             </CardContent>
           </Card>
 
@@ -244,9 +240,6 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
               </div>
               <div className="flex items-center gap-3">
                 <Button size="sm" onClick={onStartProfile}>Get started</Button>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  See an example
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -272,7 +265,7 @@ export function LobbyView({ onSelectFloor, onStartProfile, isAuthenticated }: Lo
                   <span>Get people to meet</span>
                 </li>
               </ol>
-              <Button variant="outline" size="sm" className="mt-4 w-full">
+              <Button variant="outline" size="sm" className="mt-4 w-full" onClick={onStartProfile}>
                 Show me how
               </Button>
             </CardContent>

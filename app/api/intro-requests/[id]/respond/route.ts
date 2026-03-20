@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireMember } from "@/lib/auth-helpers"
+import { requireEitherMember } from "@/lib/telegram/dual-auth"
 import { formatApiError } from "@/lib/errors"
 import { respondIntroRequestSchema } from "@/lib/validations/intro-request"
 import { respondToIntroRequest } from "@/lib/services/intro-service"
@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { memberId } = await requireMember()
+    const { memberId } = await requireEitherMember(request)
     const { id } = await params
     const body = await request.json()
     const data = respondIntroRequestSchema.parse(body)

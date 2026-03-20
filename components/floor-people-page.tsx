@@ -261,10 +261,10 @@ interface MemberProfileDrawerProps {
 }
 
 function MemberProfileDrawer({ open, member, loading, onClose, onRequestIntro }: MemberProfileDrawerProps) {
-  const introOpennessLabels = {
-    very_open: "Very open to intros",
-    open_if_relevant: "Open if relevant",
-    low_profile: "Keeping a low profile"
+  const introOpennessLabels: Record<string, string> = {
+    very: "Very open to intros",
+    relevant: "Open if relevant",
+    low: "Keeping a low profile"
   }
   
   return (

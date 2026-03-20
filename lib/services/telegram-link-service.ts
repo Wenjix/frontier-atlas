@@ -192,6 +192,86 @@ export async function linkTelegramToAtlasAccount(
   })
 }
 
+export async function createMemberFromTelegram(telegramLinkId: string, floorId: string) {
+  const link = await prisma.memberTelegramLink.findUnique({
+    where: { id: telegramLinkId },
+  })
+  if (!link) {
+    throw new AppError("NOT_FOUND", "Telegram link not found")
+  }
+  if (link.memberId) {
+    throw new AppError("CONFLICT", "Telegram account already has a member profile")
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // Re-read link inside transaction to prevent race conditions
+    const freshLink = await tx.memberTelegramLink.findUnique({ where: { id: telegramLinkId } })
+    if (freshLink?.memberId) {
+      throw new AppError("CONFLICT", "Telegram account already has a member profile")
+    }
+
+    // Validate floor exists
+    const floor = await tx.floor.findUnique({ where: { id: floorId } })
+    if (!floor) {
+      throw new AppError("NOT_FOUND", "Floor not found")
+    }
+
+    // Find or create User with placeholder email
+    let user = link.userId
+      ? await tx.user.findUnique({ where: { id: link.userId } })
+      : null
+
+    if (!user) {
+      const placeholderEmail = `tg_${link.telegramUserId}@atlas.local`
+      user = await tx.user.create({
+        data: {
+          email: placeholderEmail,
+          name: [link.firstName, link.lastName].filter(Boolean).join(" ") || undefined,
+          image: link.photoUrl,
+        },
+      })
+    }
+
+    const fullName = [link.firstName, link.lastName].filter(Boolean).join(" ") || "Neighbor"
+
+    const member = await tx.member.create({
+      data: {
+        userId: user.id,
+        fullName,
+        avatarUrl: link.photoUrl,
+      },
+    })
+
+    await tx.memberFloorMembership.create({
+      data: {
+        memberId: member.id,
+        floorId,
+        role: "MEMBER",
+        status: "ACTIVE",
+      },
+    })
+
+    await tx.memberProfile.create({
+      data: {
+        memberId: member.id,
+        homeFloorId: floorId,
+        status: "DRAFT",
+      },
+    })
+
+    await tx.memberTelegramLink.update({
+      where: { id: telegramLinkId },
+      data: { userId: user.id, memberId: member.id },
+    })
+
+    return {
+      userId: user.id,
+      memberId: member.id,
+      floorId,
+    }
+  })
+}
+
 export async function updateJoinStatus(telegramLinkId: string, status: TelegramJoinStatus) {
   return prisma.memberTelegramLink.update({
     where: { id: telegramLinkId },

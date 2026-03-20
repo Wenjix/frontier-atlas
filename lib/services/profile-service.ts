@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { AppError } from "@/lib/errors"
-import { profilePublishRequirements } from "@/lib/validations/profile"
+import { profilePublishRequirements, profileQuickPublishRequirements } from "@/lib/validations/profile"
 import { createNotification } from "@/lib/services/notification-service"
 import type { z } from "zod"
 import type { profileDraftSchema } from "@/lib/validations/profile"
@@ -45,6 +45,10 @@ export async function saveDraft(memberId: string, data: ProfileDraftInput & { fu
       })
     }
 
+    const existing = await tx.memberProfile.findUnique({ where: { memberId } })
+    if (!existing) {
+      throw new AppError("NOT_FOUND", "Profile not found. Claim an invitation first.")
+    }
     const profile = await tx.memberProfile.update({
       where: { memberId },
       data: profileFields,
@@ -68,7 +72,7 @@ export async function saveDraft(memberId: string, data: ProfileDraftInput & { fu
   return getProfile(memberId)
 }
 
-export async function publishProfile(memberId: string) {
+export async function publishProfile(memberId: string, mode: "quick" | "full" = "full") {
   const member = await prisma.member.findUnique({
     where: { id: memberId },
     include: {
@@ -85,11 +89,18 @@ export async function publishProfile(memberId: string) {
     throw new AppError("VALIDATION_ERROR", "Full name is required before publishing")
   }
 
-  // Validate all required fields are present
-  const parseResult = profilePublishRequirements.safeParse(member.profile)
-  if (!parseResult.success) {
-    const missing = parseResult.error.errors.map((e) => e.path.join(".")).join(", ")
-    throw new AppError("VALIDATION_ERROR", `Missing required fields: ${missing}`)
+  if (mode === "quick") {
+    const parseResult = profileQuickPublishRequirements.safeParse(member.profile)
+    if (!parseResult.success) {
+      const missing = parseResult.error.errors.map((e) => e.path.join(".")).join(", ")
+      throw new AppError("VALIDATION_ERROR", `Missing required fields: ${missing}`)
+    }
+  } else {
+    const parseResult = profilePublishRequirements.safeParse(member.profile)
+    if (!parseResult.success) {
+      const missing = parseResult.error.errors.map((e) => e.path.join(".")).join(", ")
+      throw new AppError("VALIDATION_ERROR", `Missing required fields: ${missing}`)
+    }
   }
 
   // Check active membership on home floor
@@ -100,9 +111,16 @@ export async function publishProfile(memberId: string) {
     throw new AppError("FORBIDDEN", "No active membership on your home floor")
   }
 
+  // In quick mode, set safe defaults for missing fields
+  const quickDefaults = mode === "quick" ? {
+    ...(member.profile.visibility ? {} : { visibility: "FLOOR" as const }),
+    ...(member.profile.introOpenness ? {} : { introOpenness: "VERY_OPEN" as const }),
+  } : {}
+
   const profile = await prisma.memberProfile.update({
     where: { memberId },
     data: {
+      ...quickDefaults,
       status: "PUBLISHED",
       publishedAt: new Date(),
     },

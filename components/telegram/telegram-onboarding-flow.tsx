@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { telegramApi } from "@/lib/telegram/telegram-api-client"
 import { useTelegram } from "@/lib/telegram/telegram-context"
-import { visibilityMap, opennessMap } from "@/lib/enum-maps"
+import { visibilityMap, opennessMap, visibilityReverseMap, opennessReverseMap } from "@/lib/enum-maps"
 import { TelegramJoinCard } from "./telegram-join-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -126,6 +126,54 @@ export function TelegramOnboardingFlow({ floorId }: TelegramOnboardingFlowProps)
     }
     setInitialized(true)
   }, [])
+
+  // Fetch existing profile from API to pre-fill form (e.g., profile created on web)
+  useEffect(() => {
+    if (!initialized) return
+    // Only fetch if we didn't restore a localStorage draft (i.e., starting fresh)
+    if (step !== 0) return
+
+    telegramApi
+      .get<{
+        fullName: string
+        profile: {
+          oneLineIntro: string | null
+          websiteUrl: string | null
+          workingOn: string | null
+          curiousAbout: string | null
+          wantsToMeet: string | null
+          canHelpWith: string | null
+          needsHelpWith: string | null
+          conversationStarter: string | null
+          visibility: string
+          introOpenness: string
+          topics: string[]
+        } | null
+      }>("/api/me/profile")
+      .then((res) => {
+        if (res.profile && res.profile.oneLineIntro) {
+          // Profile exists with data - pre-fill the form
+          setData({
+            fullName: res.fullName || "",
+            photo: null,
+            oneLineIntro: res.profile.oneLineIntro || "",
+            website: res.profile.websiteUrl || "",
+            workingOn: res.profile.workingOn || "",
+            curiousAbout: res.profile.curiousAbout || "",
+            topics: res.profile.topics || [],
+            whoToMeet: res.profile.wantsToMeet || "",
+            helpOthers: res.profile.canHelpWith || "",
+            needHelp: res.profile.needsHelpWith || "",
+            conversationStarter: res.profile.conversationStarter || "",
+            visibility: (visibilityReverseMap[res.profile.visibility as keyof typeof visibilityReverseMap] || "floor") as OnboardingData["visibility"],
+            openness: (opennessReverseMap[res.profile.introOpenness as keyof typeof opennessReverseMap] || "very") as OnboardingData["openness"],
+          })
+        }
+      })
+      .catch(() => {
+        // Non-critical: fall through to blank form
+      })
+  }, [initialized, step])
 
   // Persist draft to localStorage whenever step or data changes
   useEffect(() => {
