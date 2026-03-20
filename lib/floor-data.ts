@@ -16,13 +16,13 @@ export interface FloorDefinition {
 export const floors: FloorDefinition[] = [
   {
     id: "basement",
-    number: "G",
-    name: "Entrance",
-    icon: "🚪",
+    number: "B",
+    name: "Basement",
+    icon: "⚙️",
     type: "commons",
-    description: "Welcome to the heart of it all. Where your journey begins.",
-    tags: ["welcome", "orientation"],
-    bestFor: "First visits, orientation, finding your way",
+    description: "Workshop and utilities space. The building's engine room.",
+    tags: ["workshop", "utilities", "storage", "building systems"],
+    bestFor: "Workshop access, building utilities, storage",
   },
   {
     id: "floor-1",
@@ -31,7 +31,7 @@ export const floors: FloorDefinition[] = [
     icon: "🏠",
     type: "commons",
     description: "Your starting point. Meet the community, find your way, begin your journey.",
-    tags: ["onboarding", "introductions", "navigation"],
+    tags: ["welcome", "orientation", "onboarding", "introductions", "navigation"],
     bestFor: "New members, first visits, finding your way",
   },
   {
