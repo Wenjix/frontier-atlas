@@ -168,7 +168,7 @@ export const floors: FloorDefinition[] = [
   {
     id: "floor-15",
     number: "15",
-    name: "Coworking & The Library",
+    name: "Co-working for All Members",
     icon: "📚",
     type: "commons",
     description: "Deep work sessions with noise-cancelling environment. Perfect for focused execution.",
@@ -178,7 +178,7 @@ export const floors: FloorDefinition[] = [
   {
     id: "floor-16",
     number: "16",
-    name: "d/acc Lounge",
+    name: "d/acc Cross-Pollination Lounge",
     icon: "🏝️",
     type: "commons",
     description: "Cross-pollination space for all communities to mingle. Host friends, investors, or enjoy panoramic city views.",
