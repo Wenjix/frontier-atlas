@@ -2,6 +2,8 @@
 
 A spatial community platform for navigating a building with 17 themed floors. Members create profiles, discover people, and request introductions.
 
+[![Demo Video](https://img.youtube.com/vi/6k0bFcmGBZE/maxresdefault.jpg)](https://youtu.be/6k0bFcmGBZE)
+
 ## Tech Stack
 
 Next.js 16 (App Router) / React 19 / Prisma 7 / PostgreSQL / Auth.js v5 / Tailwind CSS v4 / shadcn/ui
