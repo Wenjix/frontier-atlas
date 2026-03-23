@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { formatApiError } from "@/lib/errors"
 import { requireEitherAuth } from "@/lib/telegram/dual-auth"
+import { requireFloorAccess } from "@/lib/floor-access"
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +11,7 @@ export async function GET(
   try {
     await requireEitherAuth(request)
     const { floorId } = await params
+    await requireFloorAccess(request, floorId)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
     const [memberCount, recentJoinCount, recentMembers] = await Promise.all([

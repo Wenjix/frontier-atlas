@@ -12,7 +12,9 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String?   @unique
+  walletAddress String?   @unique
+  ensName       String?
   emailVerified DateTime?
   image         String?
   createdAt     DateTime  @default(now())
@@ -85,8 +87,9 @@ model Floor {
   tags             String[]
   bestFor          String?
   character        String?
-  floorType        FloorType
-  isActive         Boolean   @default(true)
+  requiredSelfPassId String?
+  floorType          FloorType
+  isActive           Boolean   @default(true)
   createdAt        DateTime  @default(now())
 
   memberships MemberFloorMembership[]
@@ -113,12 +116,13 @@ model Invitation {
 }
 
 model MemberFloorMembership {
-  id       String           @id @default(cuid())
-  memberId String
-  floorId  String
-  role     MembershipRole   @default(MEMBER)
-  status   MembershipStatus @default(ACTIVE)
-  joinedAt DateTime         @default(now())
+  id           String           @id @default(cuid())
+  memberId     String
+  floorId      String
+  role         MembershipRole   @default(MEMBER)
+  status       MembershipStatus @default(ACTIVE)
+  accessSource String?
+  joinedAt     DateTime         @default(now())
 
   member Member @relation(fields: [memberId], references: [id])
   floor  Floor  @relation(fields: [floorId], references: [id])

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useWalletProviders } from "@/hooks/use-wallet-providers"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 type WalletState = "disconnected" | "wrong-chain" | "ready" | "signing"
@@ -74,7 +75,7 @@ export function WalletConnectButton() {
       })) as string
       setState(chainId === ETHEREUM_CHAIN_ID ? "ready" : "wrong-chain")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to connect wallet")
+      setError(getWalletErrorMessage(err))
     }
   }
 
@@ -90,7 +91,7 @@ export function WalletConnectButton() {
       })
       setState("ready")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to switch chain")
+      setError(getWalletErrorMessage(err))
     }
   }
 
@@ -131,7 +132,7 @@ export function WalletConnectButton() {
         setState("ready")
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed")
+      setError(getWalletErrorMessage(err))
       setState("ready")
     }
   }
@@ -158,6 +159,7 @@ export function WalletConnectButton() {
 
       {state === "signing" && (
         <Button disabled className="w-full">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Signing...
         </Button>
       )}

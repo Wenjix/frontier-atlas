@@ -20,6 +20,13 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
+function addressGradient(address: string): string {
+  const hash = address.slice(2, 14)
+  const color1 = `#${hash.slice(0, 6)}`
+  const color2 = `#${hash.slice(6, 12)}`
+  return `linear-gradient(135deg, ${color1}, ${color2})`
+}
+
 export function AddressDisplay({
   address,
   ensName,
@@ -39,6 +46,10 @@ export function AddressDisplay({
 
   return (
     <span className="inline-flex items-center gap-1">
+      <div
+        className="h-6 w-6 rounded-full shrink-0"
+        style={{ background: addressGradient(address) }}
+      />
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="font-mono text-sm">{displayText}</span>

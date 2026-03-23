@@ -15,7 +15,7 @@ export default async function AdminLayout({
 }) {
   const session = await auth()
 
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     redirect("/")
   }
 
@@ -24,7 +24,14 @@ export default async function AdminLayout({
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean)
 
-  if (!adminEmails.includes(session.user.email.toLowerCase())) {
+  const adminWallets = (process.env.ADMIN_WALLETS ?? "")
+    .split(",")
+    .map((w) => w.trim().toLowerCase())
+    .filter(Boolean)
+
+  const emailMatch = session.user.email && adminEmails.includes(session.user.email.toLowerCase())
+  const walletMatch = session.user.walletAddress && adminWallets.includes(session.user.walletAddress.toLowerCase())
+  if (!emailMatch && !walletMatch) {
     redirect("/")
   }
 
@@ -53,7 +60,7 @@ export default async function AdminLayout({
         ))}
 
         <div className="mt-auto pt-4 border-t text-xs text-muted-foreground truncate">
-          {session.user.email}
+          {session.user.email ?? session.user.ensName ?? `${session.user.walletAddress?.slice(0, 6)}...${session.user.walletAddress?.slice(-4)}`}
         </div>
       </aside>
 

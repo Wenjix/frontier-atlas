@@ -26,6 +26,7 @@ async function main() {
         shortDescription: floor.description,
         description: floor.description,
         character: floor.character ?? null,
+        requiredSelfPassId: floor.requiredSelfPassId ?? null,
         floorType: FLOOR_TYPE_MAP[floor.type],
       },
       create: {
@@ -37,6 +38,7 @@ async function main() {
         shortDescription: floor.description,
         description: floor.description,
         character: floor.character ?? null,
+        requiredSelfPassId: floor.requiredSelfPassId ?? null,
         floorType: FLOOR_TYPE_MAP[floor.type],
       },
     })

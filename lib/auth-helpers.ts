@@ -6,8 +6,8 @@ export async function requireAuth() {
   if (!session?.user?.id) {
     throw new AppError("UNAUTHORIZED", "Not authenticated")
   }
-  if (!session.user.email) {
-    throw new AppError("UNAUTHORIZED", "No email associated with account")
+  if (!session.user.email && !session.user.walletAddress) {
+    throw new AppError("UNAUTHORIZED", "No identity associated with account")
   }
   return session.user
 }

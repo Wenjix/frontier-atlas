@@ -90,6 +90,7 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialDa
   const [customTopic, setCustomTopic] = useState("")
   const [publishing, setPublishing] = useState(false)
   const [completionPeople, setCompletionPeople] = useState<SuggestedPerson[]>([])
+  const [ensAvatarUrl, setEnsAvatarUrl] = useState<string | null>(null)
 
   const updateData = useCallback((updates: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...updates }))
@@ -110,12 +111,19 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialDa
         .then(result => {
           if (result.success && result.data) {
             const ens = result.data
+            const hasPreFillData = ens.name || ens.description || ens.url
             setData(prev => ({
               ...prev,
               fullName: prev.fullName || ens.name || "",
               oneLineIntro: prev.oneLineIntro || ens.description || "",
               website: prev.website || ens.url || "",
             }))
+            if (ens.avatar) {
+              setEnsAvatarUrl(ens.avatar)
+            }
+            if (hasPreFillData) {
+              toast.success("Pre-filled from your ENS profile")
+            }
           }
         })
         .catch(() => {
@@ -278,15 +286,20 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialDa
                     </p>
                     <div className="flex items-center gap-4 mt-2">
                       <Avatar className="size-16">
-                        <AvatarImage src={data.photo ?? undefined} />
+                        <AvatarImage src={data.photo ?? ensAvatarUrl ?? undefined} />
                         <AvatarFallback className="bg-muted text-muted-foreground">
                           {data.fullName.split(" ").map(n => n[0]).join("").slice(0, 2) || "?"}
                         </AvatarFallback>
                       </Avatar>
-                      <Button variant="outline" size="sm" disabled title="Photo upload coming soon">
-                        <Upload className="size-4 mr-2" />
-                        Upload photo
-                      </Button>
+                      <div className="flex flex-col gap-1">
+                        <Button variant="outline" size="sm" disabled title="Photo upload coming soon">
+                          <Upload className="size-4 mr-2" />
+                          Upload photo
+                        </Button>
+                        {!data.photo && ensAvatarUrl && (
+                          <span className="text-xs text-muted-foreground">Using your ENS avatar</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -623,7 +636,7 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialDa
                   <div className="p-6 border-b border-border/50 bg-muted/20">
                     <div className="flex items-start gap-4">
                       <Avatar className="size-16">
-                        <AvatarImage src={data.photo ?? undefined} />
+                        <AvatarImage src={data.photo ?? ensAvatarUrl ?? undefined} />
                         <AvatarFallback className="bg-primary/10 text-primary text-lg">
                           {data.fullName.split(" ").map(n => n[0]).join("").slice(0, 2) || "?"}
                         </AvatarFallback>

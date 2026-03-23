@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { formatApiError, AppError } from "@/lib/errors"
 import { paginationSchema } from "@/lib/validations/common"
 import { getFloorEvents } from "@/lib/services/event-service"
+import { requireFloorAccess } from "@/lib/floor-access"
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   try {
     const { floorId } = await params
+    await requireFloorAccess(request, floorId)
 
     const floor = await prisma.floor.findUnique({
       where: { id: floorId },

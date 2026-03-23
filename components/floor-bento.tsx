@@ -15,13 +15,15 @@ import {
   MessageSquarePlus,
   UserPlus,
   ChevronLeft,
-  Mail
+  Mail,
+  Lock
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RequestIntroSheet } from "@/components/request-intro-flow"
+import { SelfVerifyModal } from "@/components/self-verify-modal"
 
 // Local interfaces for data shapes fetched from API
 // (these were removed from floor-data.ts during the FloorDefinition rewrite)
@@ -117,6 +119,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
   // Gating state
   const [isGated, setIsGated] = useState(false)
   const [userHasAccess, setUserHasAccess] = useState(false)
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false)
   const isLocked = isGated && !userHasAccess
 
   // Live data from API
@@ -125,8 +128,8 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
   const [livePeople, setLivePeople] = useState<PersonToKnow[] | null>(null)
   const [livePulse, setLivePulse] = useState<{ signals: string[]; summary: string } | null>(null)
 
+  // Fetch floor gating info (always runs)
   useEffect(() => {
-    // Fetch floor gating info
     fetch(`/api/floors/${floor.id}`)
       .then(res => res.json())
       .then(data => {
@@ -136,8 +139,12 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         }
       })
       .catch(() => {})
+  }, [floor.id])
 
-    // Fetch floor leads from DB
+  // Fetch floor data (skipped when locked — routes would 403 anyway)
+  useEffect(() => {
+    if (isGated && !userHasAccess) return
+
     api.get<Array<{ memberId: string; fullName: string; avatarUrl: string | null; role: string; helpsWith: string | null }>>(
       `/api/floors/${floor.id}/leads`
     ).then(res => {
@@ -148,11 +155,8 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         avatar: l.avatarUrl,
         helpsWith: l.helpsWith ?? "",
       })))
-    }).catch(() => {
-      // No fallback — leads come from DB only
-    })
+    }).catch(() => {})
 
-    // Fetch upcoming events
     api.get<{ items: Array<{ id: string; title: string; startsAt: string; hostName?: string; isRecurring?: boolean }> }>(
       `/api/floors/${floor.id}/events?upcoming=true&pageSize=4`
     ).then(res => {
@@ -163,20 +167,14 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         host: e.hostName,
         recurring: e.isRecurring,
       })))
-    }).catch(() => {
-      // Fall back to static data on error
-    })
+    }).catch(() => {})
 
-    // Fetch living floor pulse
     api.get<{ signals: string[]; summary: string }>(
       `/api/floors/${floor.id}/pulse`
     ).then(res => {
       setLivePulse({ signals: res.signals, summary: res.summary })
-    }).catch(() => {
-      // Fall back to static data on error
-    })
+    }).catch(() => {})
 
-    // Fetch featured people (requires auth)
     if (session?.user) {
       api.get<{ items: Array<{ id: string; fullName: string; avatarUrl?: string | null; oneLineIntro: string }> }>(
         `/api/floors/${floor.id}/people?pageSize=3`
@@ -188,11 +186,9 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
           project: m.oneLineIntro,
           whyNow: "On this floor",
         })))
-      }).catch(() => {
-        // Fall back to static data on error
-      })
+      }).catch(() => {})
     }
-  }, [floor.id, session?.user])
+  }, [floor.id, session?.user, isGated, userHasAccess])
 
   const displayLeads = liveLeads ?? []
   const displayEvents = liveEvents ?? []
@@ -242,7 +238,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         </BentoCard>
 
         {/* Card B: Happening Now (5 cols) */}
-        <BentoCard span="5" className={cn("p-5 bg-primary/[0.02]", isLocked && "blur-sm opacity-50 pointer-events-none")}>
+        <BentoCard span="5" className={cn("p-5 bg-primary/[0.02]", "transition-all duration-500", isLocked ? "blur-sm opacity-50 pointer-events-none" : "blur-0 opacity-100")}>
           <CardHeader className="p-0 pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
               <span className="relative flex size-2">
@@ -273,7 +269,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         </BentoCard>
 
         {/* Card C: Event Calendar (5 cols) */}
-        <BentoCard span="5" className={cn("p-5", isLocked && "blur-sm opacity-50 pointer-events-none")}>
+        <BentoCard span="5" className={cn("p-5", "transition-all duration-500", isLocked ? "blur-sm opacity-50 pointer-events-none" : "blur-0 opacity-100")}>
           <CardHeader className="p-0 pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
               <Calendar className="size-4" />
@@ -319,7 +315,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         </BentoCard>
 
         {/* Card D: Floor Leads + People to Know (7 cols) */}
-        <BentoCard span="7" className={cn("p-5", isLocked && "blur-sm opacity-50 pointer-events-none")}>
+        <BentoCard span="7" className={cn("p-5", "transition-all duration-500", isLocked ? "blur-sm opacity-50 pointer-events-none" : "blur-0 opacity-100")}>
           <CardHeader className="p-0 pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
               <User className="size-4" />
@@ -426,7 +422,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         </BentoCard>
 
         {/* Card E: Action Bar (12 cols) */}
-        <BentoCard span="12" className={cn("p-4 bg-muted/20", isLocked && "blur-sm opacity-50 pointer-events-none")}>
+        <BentoCard span="12" className={cn("p-4 bg-muted/20", "transition-all duration-500", isLocked ? "blur-sm opacity-50 pointer-events-none" : "blur-0 opacity-100")}>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <span className="text-sm text-muted-foreground shrink-0">
               Ways to plug in
@@ -490,7 +486,33 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
           </div>
         </BentoCard>
 
+        {/* Locked overlay for gated floors */}
+        {isLocked && (
+          <div className="col-span-full flex flex-col items-center justify-center py-8 -mt-2">
+            <Lock className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">This floor requires verification to access</p>
+            <Button size="sm" onClick={() => setVerifyModalOpen(true)}>
+              Verify with Self Protocol
+            </Button>
+          </div>
+        )}
+
       </div>
+
+      {/* Self Protocol Verification Modal */}
+      {isGated && (
+        <SelfVerifyModal
+          open={verifyModalOpen}
+          onOpenChange={setVerifyModalOpen}
+          floorId={floor.id}
+          floorNumber={floor.number}
+          floorName={floor.name}
+          onVerified={() => {
+            setUserHasAccess(true)
+            setVerifyModalOpen(false)
+          }}
+        />
+      )}
 
       {/* Request Intro Sheet */}
       {selectedPerson && (

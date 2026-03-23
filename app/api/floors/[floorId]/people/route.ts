@@ -5,6 +5,7 @@ import { AppError } from "@/lib/errors"
 import { paginationSchema } from "@/lib/validations/common"
 import { getFloorPeople, getFeaturedMembers } from "@/lib/services/directory-service"
 import { requireEitherMember } from "@/lib/telegram/dual-auth"
+import { requireFloorAccess } from "@/lib/floor-access"
 
 export async function GET(
   request: NextRequest,
@@ -13,6 +14,7 @@ export async function GET(
   try {
     await requireEitherMember(request)
     const { floorId } = await params
+    await requireFloorAccess(request, floorId)
     const searchParams = request.nextUrl.searchParams
 
     const floor = await prisma.floor.findUnique({

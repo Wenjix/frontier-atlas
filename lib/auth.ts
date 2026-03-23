@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "@/lib/auth.config"
 import { consumeNonce, verifySiweMessage } from "@/lib/web3/siwe"
+import { resolveEnsProfile } from "@/lib/web3/ens-service"
 
 declare module "next-auth" {
   interface Session {
@@ -53,12 +54,31 @@ const siweProvider = Credentials({
         create: { walletAddress: address },
       })
 
+      // Best-effort ENS resolution — failure should not block sign-in
+      let ensName: string | null = user.ensName
+      try {
+        const ensProfile = await resolveEnsProfile(address)
+        ensName = ensProfile.name
+        if (ensName) {
+          await prisma.user.update({
+            where: { walletAddress: address },
+            data: {
+              ensName,
+              name: ensProfile.name,
+              image: ensProfile.avatar,
+            },
+          })
+        }
+      } catch (e) {
+        console.warn("ENS resolution failed:", e)
+      }
+
       return {
         id: user.id,
         email: user.email,
         walletAddress: address,
-        ensName: user.ensName,
-        name: user.ensName ?? user.name,
+        ensName,
+        name: ensName ?? user.name,
       }
     } catch (e) {
       console.error("SIWE auth failed:", e)

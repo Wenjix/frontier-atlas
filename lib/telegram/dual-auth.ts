@@ -19,7 +19,7 @@ interface AuthResult {
 export async function requireEitherAuth(request: NextRequest): Promise<AuthResult> {
   // Try Auth.js session first (matches original requireAuth email check)
   const session = await auth()
-  if (session?.user?.id && session.user.email) {
+  if (session?.user?.id && (session.user.email || session.user.walletAddress)) {
     return {
       userId: session.user.id,
       memberId: session.user.memberId ?? null,

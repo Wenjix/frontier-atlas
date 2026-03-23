@@ -9,6 +9,7 @@ export interface FloorDefinition {
   description: string
   nickname?: string
   character?: string
+  requiredSelfPassId?: string
 }
 
 export const floors: FloorDefinition[] = [
@@ -124,6 +125,7 @@ export const floors: FloorDefinition[] = [
     icon: "🔮",
     type: "thematic",
     description: "Shape the future of finance with blockchain, DeFi, Layer 2 solutions, and Real World Assets.",
+    requiredSelfPassId: "self-humanity-check",
   },
   {
     id: "floor-14",

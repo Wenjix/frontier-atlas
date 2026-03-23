@@ -35,26 +35,48 @@ export async function POST(
       throw new AppError("FORBIDDEN", "Verification failed")
     }
 
-    // Create or find membership
-    const membership = await prisma.memberFloorMembership.upsert({
-      where: {
-        memberId_floorId: {
-          memberId: user.memberId!,
+    const txResult = await prisma.$transaction(async (tx) => {
+      // 1. Find or create Member
+      let member = await tx.member.findUnique({ where: { userId: user.id } })
+      if (!member) {
+        member = await tx.member.create({
+          data: {
+            userId: user.id,
+            fullName: user.ensName ?? user.email?.split("@")[0] ?? "Anonymous",
+          },
+        })
+      }
+
+      // 2. Upsert MemberFloorMembership
+      await tx.memberFloorMembership.upsert({
+        where: { memberId_floorId: { memberId: member.id, floorId } },
+        update: { status: "ACTIVE", accessSource: "SELF_PROOF" },
+        create: {
+          memberId: member.id,
           floorId,
+          role: "MEMBER",
+          status: "ACTIVE",
+          accessSource: "SELF_PROOF",
         },
-      },
-      update: { status: "ACTIVE" },
-      create: {
-        memberId: user.memberId!,
-        floorId,
-        role: "MEMBER",
-        status: "ACTIVE",
-      },
+      })
+
+      // 3. Upsert MemberProfile (draft, only if no existing profile)
+      await tx.memberProfile.upsert({
+        where: { memberId: member.id },
+        update: {},
+        create: {
+          memberId: member.id,
+          homeFloorId: floorId,
+          status: "DRAFT",
+        },
+      })
+
+      return { memberId: member.id }
     })
 
     return NextResponse.json({
       success: true,
-      data: { memberId: membership.memberId, floorId, membershipStatus: "active" },
+      data: { memberId: txResult.memberId, floorId, membershipStatus: "active" },
     })
   } catch (error) {
     return formatApiError(error)
