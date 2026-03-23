@@ -103,25 +103,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: isDev
     ? [devCredentialsProvider, siweProvider]
     : [nodemailerProvider, siweProvider],
-  // Credentials provider requires JWT strategy
-  session: { strategy: isDev ? "jwt" : "database" },
+  // JWT required: SIWE Credentials provider needs JWT strategy in both dev and prod
+  session: { strategy: "jwt" },
   callbacks: {
     ...authConfig.callbacks,
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        // Persist wallet data from authorize() return value
+        token.walletAddress = (user as Record<string, unknown>).walletAddress as string | null ?? null
+        token.ensName = (user as Record<string, unknown>).ensName as string | null ?? null
       }
       return token
     },
-    async session({ session, token, user }) {
-      // JWT strategy (dev) uses token, database strategy (prod) uses user
-      const userId = isDev ? (token.id as string) : user.id
+    async session({ session, token }) {
+      // JWT-only strategy: always use token (user param is undefined)
+      const userId = token.id as string
       const member = await prisma.member.findUnique({
         where: { userId },
         select: { id: true },
       })
       session.user.id = userId
       session.user.memberId = member?.id ?? null
+      session.user.walletAddress = (token.walletAddress as string) ?? null
+      session.user.ensName = (token.ensName as string) ?? null
       return session
     },
   },
