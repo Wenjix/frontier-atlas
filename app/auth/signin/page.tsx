@@ -24,7 +24,7 @@ function SignInForm() {
     try {
       if (isDev) {
         // Dev: Credentials provider — signs in immediately, no email sent
-        await signIn("credentials", { email, callbackUrl })
+        await signIn("dev-login", { email, callbackUrl })
       } else {
         // Prod: Nodemailer — sends a magic link email
         await signIn("nodemailer", { email, callbackUrl })

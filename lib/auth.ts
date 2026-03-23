@@ -19,69 +19,81 @@ declare module "next-auth" {
 
 const isDev = process.env.NODE_ENV === "development"
 
+const siweProvider = Credentials({
+  id: "siwe",
+  name: "Ethereum",
+  credentials: {
+    message: { type: "text" },
+    signature: { type: "text" },
+  },
+  async authorize() {
+    // Implementation in 1C-2
+    return null
+  },
+})
+
+const devCredentialsProvider = Credentials({
+  id: "dev-login",
+  name: "Dev Login",
+  credentials: {
+    email: { label: "Email", type: "email", placeholder: "maya@example.com" },
+  },
+  async authorize(credentials) {
+    const email = credentials?.email as string
+    if (!email) return null
+
+    // Find or create user
+    let user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      user = await prisma.user.create({
+        data: { email, emailVerified: new Date() },
+      })
+    }
+    // Dev only: auto-create member + profile + floor membership
+    let member = await prisma.member.findUnique({ where: { userId: user.id } })
+    if (!member) {
+      member = await prisma.member.create({
+        data: {
+          userId: user.id,
+          fullName: email.split("@")[0],
+          profile: {
+            create: {
+              homeFloorId: "floor-1",
+              status: "DRAFT",
+              visibility: "TOWER",
+              introOpenness: "VERY_OPEN",
+            },
+          },
+          memberships: {
+            create: { floorId: "floor-1", role: "MEMBER", status: "ACTIVE" },
+          },
+        },
+      })
+    }
+
+    return { id: user.id, email: user.email, name: user.name }
+  },
+})
+
+const nodemailerProvider = Nodemailer({
+  server: {
+    host: process.env.EMAIL_SERVER_HOST,
+    port: Number(process.env.EMAIL_SERVER_PORT),
+    auth: {
+      user: process.env.EMAIL_SERVER_USER,
+      pass: process.env.EMAIL_SERVER_PASSWORD,
+    },
+  },
+  from: process.env.EMAIL_FROM,
+})
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adapter: PrismaAdapter(prisma as any),
   providers: isDev
-    ? [
-        // Dev-only: sign in with just an email, no SMTP needed.
-        // Creates the user in the DB if they don't exist.
-        Credentials({
-          name: "Dev Login",
-          credentials: {
-            email: { label: "Email", type: "email", placeholder: "maya@example.com" },
-          },
-          async authorize(credentials) {
-            const email = credentials?.email as string
-            if (!email) return null
-
-            // Find or create user
-            let user = await prisma.user.findUnique({ where: { email } })
-            if (!user) {
-              user = await prisma.user.create({
-                data: { email, emailVerified: new Date() },
-              })
-            }
-            // Dev only: auto-create member + profile + floor membership
-            let member = await prisma.member.findUnique({ where: { userId: user.id } })
-            if (!member) {
-              member = await prisma.member.create({
-                data: {
-                  userId: user.id,
-                  fullName: email.split("@")[0],
-                  profile: {
-                    create: {
-                      homeFloorId: "floor-1",
-                      status: "DRAFT",
-                      visibility: "TOWER",
-                      introOpenness: "VERY_OPEN",
-                    },
-                  },
-                  memberships: {
-                    create: { floorId: "floor-1", role: "MEMBER", status: "ACTIVE" },
-                  },
-                },
-              })
-            }
-
-            return { id: user.id, email: user.email, name: user.name }
-          },
-        }),
-      ]
-    : [
-        Nodemailer({
-          server: {
-            host: process.env.EMAIL_SERVER_HOST,
-            port: Number(process.env.EMAIL_SERVER_PORT),
-            auth: {
-              user: process.env.EMAIL_SERVER_USER,
-              pass: process.env.EMAIL_SERVER_PASSWORD,
-            },
-          },
-          from: process.env.EMAIL_FROM,
-        }),
-      ],
+    ? [devCredentialsProvider, siweProvider]
+    : [nodemailerProvider, siweProvider],
   // Credentials provider requires JWT strategy
   session: { strategy: isDev ? "jwt" : "database" },
   callbacks: {
