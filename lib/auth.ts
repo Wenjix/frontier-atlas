@@ -10,11 +10,20 @@ declare module "next-auth" {
     user: {
       id: string
       memberId: string | null
-      email: string
+      email: string | null
+      walletAddress: string | null
+      ensName: string | null
       name?: string | null
       image?: string | null
     }
   }
+}
+
+// JWT token extension (used via token.walletAddress / token.ensName in callbacks)
+interface ExtendedJWT {
+  id: string
+  walletAddress?: string | null
+  ensName?: string | null
 }
 
 const isDev = process.env.NODE_ENV === "development"
