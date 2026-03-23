@@ -17,6 +17,15 @@ export async function generateNonce(): Promise<string> {
   return nonce
 }
 
+export async function consumeNonce(): Promise<string | null> {
+  const cookieStore = await cookies()
+  const nonce = cookieStore.get("siwe-nonce")?.value ?? null
+  if (nonce) {
+    cookieStore.delete("siwe-nonce")
+  }
+  return nonce
+}
+
 export async function verifySiweMessage(
   message: string,
   signature: string,

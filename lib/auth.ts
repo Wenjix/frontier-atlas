@@ -4,6 +4,7 @@ import Nodemailer from "next-auth/providers/nodemailer"
 import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "@/lib/auth.config"
+import { consumeNonce, verifySiweMessage } from "@/lib/web3/siwe"
 
 declare module "next-auth" {
   interface Session {
@@ -35,9 +36,34 @@ const siweProvider = Credentials({
     message: { type: "text" },
     signature: { type: "text" },
   },
-  async authorize() {
-    // Implementation in 1C-2
-    return null
+  async authorize(credentials) {
+    try {
+      const message = credentials?.message as string
+      const signature = credentials?.signature as string
+      if (!message || !signature) return null
+
+      const nonce = await consumeNonce()
+      if (!nonce) throw new Error("No nonce cookie found")
+
+      const address = await verifySiweMessage(message, signature, nonce)
+
+      const user = await prisma.user.upsert({
+        where: { walletAddress: address },
+        update: {},
+        create: { walletAddress: address },
+      })
+
+      return {
+        id: user.id,
+        email: user.email,
+        walletAddress: address,
+        ensName: user.ensName,
+        name: user.ensName ?? user.name,
+      }
+    } catch (e) {
+      console.error("SIWE auth failed:", e)
+      return null
+    }
   },
 })
 
