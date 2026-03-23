@@ -52,9 +52,9 @@ export async function POST(
     })
     const alreadySentEmails = new Set(alreadySent.map((e) => e.recipientEmail))
 
-    // ── Build recipient list, skipping already-sent ──
+    // ── Build recipient list, skipping already-sent and wallet-only users ──
     const recipients = eligibleMembers.filter(
-      (m) => !alreadySentEmails.has(m.member.user.email)
+      (m) => m.member.user.email && !alreadySentEmails.has(m.member.user.email)
     )
     const skipped = eligibleMembers.length - recipients.length
 
@@ -96,7 +96,7 @@ export async function POST(
       })
 
       const result = await sendEmail({
-        to: member.user.email,
+        to: member.user.email!,
         subject,
         html,
         emailType: "FLOOR_ONBOARDING",

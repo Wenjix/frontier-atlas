@@ -3,6 +3,12 @@
 import { useState, useEffect } from "react"
 import type { EIP1193Provider, EIP6963ProviderDetail, EIP6963AnnounceProviderEvent } from "@/lib/web3/eip6963"
 
+declare global {
+  interface Window {
+    ethereum?: EIP1193Provider
+  }
+}
+
 export function useWalletProviders() {
   const [providers, setProviders] = useState<EIP6963ProviderDetail[]>([])
   const [fallbackProvider, setFallbackProvider] = useState<EIP1193Provider | null>(null)
