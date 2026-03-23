@@ -67,9 +67,10 @@ interface OnboardingFlowProps {
   onOpenChange: (open: boolean) => void
   floorName?: string
   initialData?: Partial<OnboardingData> | null
+  walletAddress?: string | null
 }
 
-export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialData }: OnboardingFlowProps) {
+export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialData, walletAddress }: OnboardingFlowProps) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<OnboardingData>({
     fullName: "",
@@ -100,6 +101,28 @@ export function OnboardingFlow({ open, onOpenChange, floorName = "AI", initialDa
       setStep(1) // Skip the entry step, go straight to editing
     }
   }, [open, initialData])
+
+  // ENS profile pre-fill for wallet users (best-effort)
+  useEffect(() => {
+    if (open && walletAddress && !initialData) {
+      fetch(`/api/ens/${walletAddress}`)
+        .then(res => res.json())
+        .then(result => {
+          if (result.success && result.data) {
+            const ens = result.data
+            setData(prev => ({
+              ...prev,
+              fullName: prev.fullName || ens.name || "",
+              oneLineIntro: prev.oneLineIntro || ens.description || "",
+              website: prev.website || ens.url || "",
+            }))
+          }
+        })
+        .catch(() => {
+          // Silently fail — ENS pre-fill is best-effort
+        })
+    }
+  }, [open, walletAddress, initialData])
 
   const toggleTopic = (topic: string) => {
     setData(prev => {
