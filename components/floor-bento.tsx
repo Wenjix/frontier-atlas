@@ -114,6 +114,11 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
     openToIntros?: boolean
   } | null>(null)
 
+  // Gating state
+  const [isGated, setIsGated] = useState(false)
+  const [userHasAccess, setUserHasAccess] = useState(false)
+  const isLocked = isGated && !userHasAccess
+
   // Live data from API
   const [liveLeads, setLiveLeads] = useState<FloorLead[] | null>(null)
   const [liveEvents, setLiveEvents] = useState<FloorEvent[] | null>(null)
@@ -121,6 +126,17 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
   const [livePulse, setLivePulse] = useState<{ signals: string[]; summary: string } | null>(null)
 
   useEffect(() => {
+    // Fetch floor gating info
+    fetch(`/api/floors/${floor.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setIsGated(data.data.isGated)
+          setUserHasAccess(data.data.userHasMembership)
+        }
+      })
+      .catch(() => {})
+
     // Fetch floor leads from DB
     api.get<Array<{ memberId: string; fullName: string; avatarUrl: string | null; role: string; helpsWith: string | null }>>(
       `/api/floors/${floor.id}/leads`
@@ -226,7 +242,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         </BentoCard>
 
         {/* Card B: Happening Now (5 cols) */}
-        <BentoCard span="5" className="p-5 bg-primary/[0.02]">
+        <BentoCard span="5" className={cn("p-5 bg-primary/[0.02]", isLocked && "blur-sm opacity-50 pointer-events-none")}>
           <CardHeader className="p-0 pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
               <span className="relative flex size-2">
@@ -257,7 +273,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         </BentoCard>
 
         {/* Card C: Event Calendar (5 cols) */}
-        <BentoCard span="5" className="p-5">
+        <BentoCard span="5" className={cn("p-5", isLocked && "blur-sm opacity-50 pointer-events-none")}>
           <CardHeader className="p-0 pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
               <Calendar className="size-4" />
@@ -303,7 +319,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         </BentoCard>
 
         {/* Card D: Floor Leads + People to Know (7 cols) */}
-        <BentoCard span="7" className="p-5">
+        <BentoCard span="7" className={cn("p-5", isLocked && "blur-sm opacity-50 pointer-events-none")}>
           <CardHeader className="p-0 pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
               <User className="size-4" />
@@ -410,7 +426,7 @@ export function FloorBento({ floor, onPersonClick, onEventClick, onBack }: Floor
         </BentoCard>
 
         {/* Card E: Action Bar (12 cols) */}
-        <BentoCard span="12" className="p-4 bg-muted/20">
+        <BentoCard span="12" className={cn("p-4 bg-muted/20", isLocked && "blur-sm opacity-50 pointer-events-none")}>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <span className="text-sm text-muted-foreground shrink-0">
               Ways to plug in
