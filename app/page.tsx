@@ -16,6 +16,7 @@ import { Search, Inbox } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { OnboardingFlow } from "@/components/onboarding-flow"
+import { AddressDisplay } from "@/components/address-display"
 
 export default function TowerAtlasPage() {
   const { data: session, status } = useSession()
@@ -131,7 +132,13 @@ export default function TowerAtlasPage() {
             </div>
             
             {/* Right - Primary CTA */}
-            <div className="flex justify-end gap-2">
+            <div className="flex items-center justify-end gap-2">
+              {isAuthenticated && session?.user?.walletAddress && (
+                <AddressDisplay
+                  address={session.user.walletAddress}
+                  ensName={session.user.ensName}
+                />
+              )}
               {status === "loading" ? (
                 <div className="w-24 h-9" />
               ) : (
@@ -205,6 +212,7 @@ export default function TowerAtlasPage() {
         }}
         floorName={selectedFloor?.name ?? "Frontier"}
         initialData={profileData}
+        walletAddress={session?.user?.walletAddress}
       />
     </div>
   )
